@@ -1,0 +1,61 @@
+@import url('https://fonts.googleapis.com/css?family=Gloria+Hallelujah');
+
+a {
+  color: #47a3d1;
+}
+
+a:hover {
+  color: #2e8ab8;
+}
+
+body {
+  background-color: #fffdfa;
+  color: #71685b;
+}
+
+.ui.header,
+.ui header h1 a {
+  color: #71685b;
+}
+
+.ui.grid .row.transaction {
+  padding: 2rem;
+}
+
+.ui.grid .row.wish-button {
+  padding: 2rem;
+}
+
+.row.transaction:nth-child(odd) {
+  background-color: #fffdfa;
+}
+
+.row.transaction:nth-child(even) {
+  background-color: #f8f3ed;
+}
+
+.ui.small.header {
+  color: #47a3d1;
+}
+
+.nem-address {
+  background-color: #71685b;
+  border: 0;
+  border-radius: 0.25rem;
+  color: #fffdfa;
+  cursor: pointer;
+  font-weight: bold;
+  margin-bottom: 1rem;
+  padding: 0.5rem;
+  text-align: center;
+  width: 100%;
+}
+
+.nem-address:active {
+  color: #ff9f1a;
+}
+
+.nem-address::selection {
+  background-color: #fff;
+  color: #000;
+}
