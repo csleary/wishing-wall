@@ -12,13 +12,11 @@ const StatusBar = props => (
             name="circle"
             title={
               props.socketConnected
-                ? 'Connected to NEM Node'
+                ? `Connected to NEM Node websocket (${props.node.host}).`
                 : 'Currently disconnected!'
             }
           />
-          <span title="Recent activity.">
-            {props.messages[props.messages.length - 1]}
-          </span>
+          <span title="Recent activity.">{props.messages[0]}</span>
           {props.errors.length > 0 && (
             <Message
               color="red"

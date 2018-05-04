@@ -1,6 +1,6 @@
 import React from 'react';
 import QRCode from 'qrcode.react';
-import { address } from './App';
+import { ADDRESS } from './App';
 
 const QrCode = () => {
   // 1: Testnet, 2: Mainnet.
@@ -8,7 +8,7 @@ const QrCode = () => {
     v: 1,
     type: 2,
     data: {
-      addr: address.replace(/-/g, ''),
+      addr: ADDRESS.replace(/-/g, ''),
       amount: null,
       msg: null
     }

@@ -1,7 +1,7 @@
 import nem from 'nem-sdk';
 import React from 'react';
 import { Button, Grid, Icon, Transition } from 'semantic-ui-react';
-import { address } from './App';
+import { ADDRESS } from './App';
 import QrCode from './QrCode';
 
 const handleCopy = props => {
@@ -71,7 +71,7 @@ const WishButton = props => (
             onClick={() => handleCopy(props)}
             onKeyPress={e => handleKeyPress(props, e)}
           >
-            {nem.utils.format.address(address)}
+            {nem.utils.format.address(ADDRESS)}
           </div>
           <Transition
             animation="fade"

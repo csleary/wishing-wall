@@ -6,15 +6,22 @@ import Header from './Header';
 import StatusBar from './StatusBar';
 import TransactionList from './TransactionList';
 import WishButton from './WishButton';
+import { fetchIncomingTransactions } from './utils';
 
-// const address = 'TCQFU2U2UR27EYLADA6FNE6KY7ONFM7YH7ZYREBS';
-const address = 'TDJO3IMOI4QNYVYWWLCRQZ25W2QFRWHTLPK5WSL7';
-const endpoint = { host: 'http://23.228.67.85', port: 7778 };
+// const ADDRESS = 'TCQFU2U2UR27EYLADA6FNE6KY7ONFM7YH7ZYREBS';
+const ADDRESS = 'TDJO3IMOI4QNYVYWWLCRQZ25W2QFRWHTLPK5WSL7';
+const WEBSOCKET_ENDPOINT = { host: 'http://23.228.67.85', port: 7778 };
+const ENDPOINT = { host: 'http://23.228.67.85', port: 7890 };
+
 // const endpoint = nem.model.objects.create('endpoint')(
 //   nem.model.nodes.defaultMainnet,
 //   nem.model.nodes.websocketPort
 // );
-const nemConnector = nem.com.websockets.connector.create(endpoint, address);
+
+const nemWsConnector = nem.com.websockets.connector.create(
+  WEBSOCKET_ENDPOINT,
+  ADDRESS
+);
 let copyMessageDelay = null;
 
 class App extends Component {
@@ -23,6 +30,7 @@ class App extends Component {
     height: '',
     isLoading: true,
     messages: [],
+    node: '',
     showCode: false,
     showCopyMessage: false,
     socketConnected: false,
@@ -32,30 +40,34 @@ class App extends Component {
   };
 
   async componentDidMount() {
-    nemConnector.connect().then(
-      () => {
+    this.handleFetchRecentTransactions();
+
+    nemWsConnector.connect().then(
+      async () => {
         this.setState({
+          node: WEBSOCKET_ENDPOINT,
           socketConnected: true
         });
-        nem.com.websockets.subscribe.chain.height(nemConnector, res => {
+
+        nem.com.websockets.subscribe.chain.height(nemWsConnector, res => {
           this.setState({
             height: res.height
           });
         });
 
-        nem.com.websockets.subscribe.account.transactions.recent(
-          nemConnector,
-          res => {
-            this.setState({
-              isLoading: false,
-              transactionsRecent: res.data
-            });
-            this.newMessage(`${new Date().toLocaleTimeString()}: Received recent transactions.`);
-          }
-        );
+        // nem.com.websockets.subscribe.account.transactions.recent(
+        //   nemWsConnector,
+        //   res => {
+        //     this.setState({
+        //       isLoading: false,
+        //       transactionsRecent: res.data
+        //     });
+        //     this.newMessage(`${new Date().toLocaleTimeString()}: Received recent transactions.`);
+        //   }
+        // );
 
         nem.com.websockets.subscribe.account.transactions.confirmed(
-          nemConnector,
+          nemWsConnector,
           res => {
             this.setState({
               transactionsConfirmed: [...this.state.transactionsConfirmed, res]
@@ -65,7 +77,7 @@ class App extends Component {
         );
 
         nem.com.websockets.subscribe.account.transactions.unconfirmed(
-          nemConnector,
+          nemWsConnector,
           res => {
             this.setState({
               transactionsUnconfirmed: [
@@ -77,7 +89,7 @@ class App extends Component {
           }
         );
 
-        nem.com.websockets.requests.account.transactions.recent(nemConnector);
+        nem.com.websockets.requests.account.transactions.recent(nemWsConnector);
       },
       err => {
         this.setState({ errors: [...this.state.errors, err] });
@@ -86,7 +98,7 @@ class App extends Component {
   }
 
   newMessage = message => {
-    this.setState({ messages: [...this.state.messages, message] });
+    this.setState({ messages: [message, ...this.state.messages] });
   };
 
   handleClick = () => {
@@ -101,12 +113,27 @@ class App extends Component {
     }, 2000);
   };
 
+  handleFetchRecentTransactions = async () => {
+    this.newMessage(`${new Date().toLocaleTimeString()}: Fetching recent transactions…`);
+    const transactionsRecent = await fetchIncomingTransactions(ADDRESS);
+    if (transactionsRecent) {
+      this.setState({ isLoading: false, transactionsRecent });
+      const count = transactionsRecent.length;
+      this.newMessage(`${new Date().toLocaleTimeString()}: Received ${count} recent transaction${count >
+          1 && 's'}.`);
+    } else {
+      this.setState({ isLoading: false });
+      this.newMessage(`${new Date().toLocaleTimeString()}: No recent transactions found.`);
+    }
+  };
+
   render() {
     return (
       <div>
         <StatusBar
           errors={this.state.errors}
           messages={this.state.messages}
+          node={this.state.node}
           socketConnected={this.state.socketConnected}
         />
         <Container>
@@ -134,4 +161,4 @@ class App extends Component {
 }
 
 export default App;
-export { address };
+export { ADDRESS, ENDPOINT };

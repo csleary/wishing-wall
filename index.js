@@ -8,19 +8,22 @@ const nem = require('nem-sdk').default;
 //   nem.model.nodes.websocketPort
 // );
 
-const endpoint = { host: 'http://23.228.67.85', port: 7778 };
-const address = 'TCQFU2U2UR27EYLADA6FNE6KY7ONFM7YH7ZYREBS';
+const WEBSOCKET_ENDPOINT = { host: 'http://23.228.67.85', port: 7778 };
+const ADDRESS = 'TCQFU2U2UR27EYLADA6FNE6KY7ONFM7YH7ZYREBS';
 
-const nemConnector = nem.com.websockets.connector.create(endpoint, address);
+const nemWsConnector = nem.com.websockets.connector.create(
+  WEBSOCKET_ENDPOINT,
+  ADDRESS
+);
 
-nemConnector.connect().then(
+nemWsConnector.connect().then(
   () => {
-    nem.com.websockets.subscribe.chain.height(nemConnector, res => {
+    nem.com.websockets.subscribe.chain.height(nemWsConnector, res => {
       io.emit('height', res.height);
     });
 
     nem.com.websockets.subscribe.account.transactions.recent(
-      nemConnector,
+      nemWsConnector,
       res => {
         io.emit('transactionsRecent', res);
         io.send(`${new Date().toLocaleTimeString()}: Received recent transactions.`);
@@ -28,7 +31,7 @@ nemConnector.connect().then(
     );
 
     nem.com.websockets.subscribe.account.transactions.confirmed(
-      nemConnector,
+      nemWsConnector,
       res => {
         io.emit('transactionsConfirmed', res);
         io.send(`${new Date().toLocaleTimeString()}: Received confirmed transaction!`);
@@ -36,7 +39,7 @@ nemConnector.connect().then(
     );
 
     nem.com.websockets.subscribe.account.transactions.unconfirmed(
-      nemConnector,
+      nemWsConnector,
       res => {
         io.emit('transactionsUnconfirmed', res);
         io.send(`${new Date().toLocaleTimeString()}: Received unconfirmed transaction.`);
@@ -50,7 +53,7 @@ nemConnector.connect().then(
 
 io.on('connect', socket => {
   socket.on('fetchTransactions', () => {
-    nem.com.websockets.requests.account.transactions.recent(nemConnector);
+    nem.com.websockets.requests.account.transactions.recent(nemWsConnector);
   });
 });
 

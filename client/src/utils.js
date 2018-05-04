@@ -1,5 +1,6 @@
 import React from 'react';
 import nem from 'nem-sdk';
+import { ENDPOINT } from './App';
 
 const formatAmount = tx => {
   const { nemValue } = nem.utils.format;
@@ -13,6 +14,36 @@ const formatAmount = tx => {
   }
   return 0;
 };
+
+const fetchIncomingTransactions = paymentAddress =>
+  new Promise(resolve => {
+    let txId;
+    let total = [];
+    const fetchTransactions = async () => {
+      const incoming = await nem.com.requests.account.transactions.incoming(
+        ENDPOINT,
+        paymentAddress,
+        null,
+        txId
+      );
+
+      const currentBatch = incoming.data;
+      if (!currentBatch.length && !total.length) {
+        resolve(total);
+      }
+
+      txId = currentBatch[currentBatch.length - 1].meta.id;
+      total = [...total, ...currentBatch];
+
+      if (currentBatch.length === 25) {
+        fetchTransactions();
+      } else {
+        resolve(total);
+      }
+    };
+
+    fetchTransactions();
+  });
 
 const renderMessage = tx => {
   const { message, otherTrans } = tx.transaction;
@@ -76,4 +107,9 @@ const sortTransactions = transactionList => {
   return unique;
 };
 
-export { formatAmount, renderMessage, sortTransactions };
+export {
+  fetchIncomingTransactions,
+  formatAmount,
+  renderMessage,
+  sortTransactions
+};
