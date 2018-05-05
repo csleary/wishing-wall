@@ -1,7 +1,6 @@
 import nem from 'nem-sdk';
 import React from 'react';
 import { Button, Grid, Icon, Transition } from 'semantic-ui-react';
-import { ADDRESS } from './App';
 import QrCode from './QrCode';
 
 const handleCopy = props => {
@@ -60,12 +59,12 @@ const WishButton = props => (
         style={{ paddingTop: 0, paddingBottom: '2rem' }}
       >
         <Grid.Column textAlign="center">
-          <QrCode />
+          <QrCode address={props.address} />
         </Grid.Column>
         <Grid.Column>
           <p>
             Please send messages to this
-            {ADDRESS.startsWith('T') ? <em> testnet </em> : ' '}
+            {props.address.startsWith('T') ? <em> testnet </em> : ' '}
             address:
           </p>
           <div
@@ -75,7 +74,7 @@ const WishButton = props => (
             onClick={() => handleCopy(props)}
             onKeyPress={e => handleKeyPress(props, e)}
           >
-            {nem.utils.format.address(ADDRESS)}
+            {nem.utils.format.address(props.address)}
           </div>
           <Transition
             animation="fade"

@@ -8,9 +8,24 @@ import TransactionList from './TransactionList';
 import WishButton from './WishButton';
 import { fetchIncomingTransactions } from './utils';
 
-const query = window.location.search.substring(1).split('=');
-const params = { [query[0]]: query[1] };
-const ADDRESS = params.address || 'TDJO3IMOI4QNYVYWWLCRQZ25W2QFRWHTLPK5WSL7';
+const PARAMS = {};
+const queries = window.location.search.length
+  ? window.location.search.substring(1).split('&')
+  : [];
+queries.forEach(query => {
+  const pair = query.split('=');
+  const key = pair[0];
+  const value = pair[1];
+  if (value === 'true' || value === 'false') {
+    pair[1] = value === 'true';
+  }
+  if (parseInt(value, 10)) {
+    pair[1] = parseInt(value, 10);
+  }
+  Object.assign(PARAMS, { [key]: pair[1] });
+});
+
+const ADDRESS = PARAMS.address || 'TDJO3IMOI4QNYVYWWLCRQZ25W2QFRWHTLPK5WSL7';
 
 const ENDPOINT = ADDRESS.startsWith('T')
   ? nem.model.objects.create('endpoint')(
@@ -42,6 +57,7 @@ let copyMessageDelay = null;
 
 class App extends Component {
   state = {
+    address: ADDRESS,
     errors: [],
     height: '',
     isLoading: true,
@@ -50,9 +66,9 @@ class App extends Component {
     showCode: false,
     showCopyMessage: false,
     socketConnected: false,
-    sortByValue: true,
+    sortByValue: PARAMS.sortByValue === false ? PARAMS.sortByValue : true,
     transactionsConfirmed: [],
-    transactionsMax: 100,
+    transactionsMax: PARAMS.max || 100,
     transactionsRecent: [],
     transactionsUnconfirmed: []
   };
@@ -140,8 +156,12 @@ class App extends Component {
     if (transactionsRecent) {
       this.setState({ isLoading: false, transactionsRecent });
       const count = transactionsRecent.length;
+      const showTransactionsMax =
+        this.state.transactionsMax < count && this.state.transactionsMax !== 100
+          ? ` (displaying top ${this.state.transactionsMax})`
+          : '';
       this.newMessage(`${new Date().toLocaleTimeString()}: Received ${count} recent transaction${count >
-          1 && 's'}.`);
+          1 && 's'}${showTransactionsMax}.`);
     } else {
       this.setState({ isLoading: false });
       this.newMessage(`${new Date().toLocaleTimeString()}: No recent transactions found.`);
@@ -156,10 +176,12 @@ class App extends Component {
           messages={this.state.messages}
           node={this.state.node}
           socketConnected={this.state.socketConnected}
+          transactionsMax={this.state.transactionsMax}
         />
         <Container>
           <Header />
           <WishButton
+            address={this.state.address}
             handleClick={this.handleClick}
             handleCopyTimeout={this.handleCopyTimeout}
             showCode={this.state.showCode}
@@ -171,8 +193,9 @@ class App extends Component {
             </Loader>
             <TransactionList
               sortByValue={this.state.sortByValue}
-              transactionsRecent={this.state.transactionsRecent}
               transactionsConfirmed={this.state.transactionsConfirmed}
+              transactionsMax={this.state.transactionsMax}
+              transactionsRecent={this.state.transactionsRecent}
             />
             <Footer height={this.state.height} />
           </Grid>
@@ -183,4 +206,4 @@ class App extends Component {
 }
 
 export default App;
-export { ADDRESS, ENDPOINT };
+export { ENDPOINT };

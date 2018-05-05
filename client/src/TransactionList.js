@@ -14,6 +14,7 @@ const TransactionList = props => {
   ];
   const filtered = filterTransactions(transactionList);
   const sorted = props.sortByValue ? sortTransactions(filtered) : filtered;
+  sorted.length = props.transactionsMax;
 
   return sorted.map((tx, index) => (
     <Grid.Row className="transaction" key={tx.meta.hash.data}>

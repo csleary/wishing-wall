@@ -1,15 +1,14 @@
 import React from 'react';
 import QRCode from 'qrcode.react';
-import { ADDRESS } from './App';
 
-const QrCode = () => {
+const QrCode = props => {
   // 1: Testnet, 2: Mainnet.
-  const version = ADDRESS.startsWith('T') ? 1 : 2;
+  const version = props.address.startsWith('T') ? 1 : 2;
   const paymentData = {
     v: version,
     type: 2,
     data: {
-      addr: ADDRESS.replace(/-/g, ''),
+      addr: props.address.replace(/-/g, ''),
       amount: null,
       msg: null
     }
