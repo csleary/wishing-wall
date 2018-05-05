@@ -1,13 +1,20 @@
 import React from 'react';
 import { Grid, Icon, Header } from 'semantic-ui-react';
-import { formatAmount, renderMessage, sortTransactions } from './utils';
+import {
+  filterTransactions,
+  formatAmount,
+  renderMessage,
+  sortTransactions
+} from './utils';
 
 const TransactionList = props => {
   const transactionList = [
     ...props.transactionsRecent,
     ...props.transactionsConfirmed
   ];
-  const sorted = sortTransactions(transactionList);
+  const filtered = filterTransactions(transactionList);
+  const sorted = props.sortByValue ? sortTransactions(filtered) : filtered;
+
   return sorted.map((tx, index) => (
     <Grid.Row className="transaction" key={tx.meta.hash.data}>
       <Grid.Column

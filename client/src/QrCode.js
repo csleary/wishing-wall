@@ -4,8 +4,9 @@ import { ADDRESS } from './App';
 
 const QrCode = () => {
   // 1: Testnet, 2: Mainnet.
+  const version = ADDRESS.startsWith('T') ? 1 : 2;
   const paymentData = {
-    v: 1,
+    v: version,
     type: 2,
     data: {
       addr: ADDRESS.replace(/-/g, ''),

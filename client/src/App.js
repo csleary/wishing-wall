@@ -8,15 +8,31 @@ import TransactionList from './TransactionList';
 import WishButton from './WishButton';
 import { fetchIncomingTransactions } from './utils';
 
-// const ADDRESS = 'TCQFU2U2UR27EYLADA6FNE6KY7ONFM7YH7ZYREBS';
-const ADDRESS = 'TDJO3IMOI4QNYVYWWLCRQZ25W2QFRWHTLPK5WSL7';
-const WEBSOCKET_ENDPOINT = { host: 'http://23.228.67.85', port: 7778 };
-const ENDPOINT = { host: 'http://23.228.67.85', port: 7890 };
+const query = window.location.search.substring(1).split('=');
+const params = { [query[0]]: query[1] };
+const ADDRESS = params.address || 'TDJO3IMOI4QNYVYWWLCRQZ25W2QFRWHTLPK5WSL7';
 
-// const endpoint = nem.model.objects.create('endpoint')(
-//   nem.model.nodes.defaultMainnet,
-//   nem.model.nodes.websocketPort
-// );
+const ENDPOINT = ADDRESS.startsWith('T')
+  ? nem.model.objects.create('endpoint')(
+      nem.model.nodes.defaultTestnet,
+      nem.model.nodes.defaultPort
+    )
+  : nem.model.objects.create('endpoint')(
+      nem.model.nodes.defaultMainnet,
+      nem.model.nodes.defaultPort
+    );
+
+const WEBSOCKET_ENDPOINT = ADDRESS.startsWith('T')
+  ? nem.model.objects.create('endpoint')(
+      // nem.model.nodes.defaultTestnet,
+      'http://23.228.67.85',
+      // nem.model.nodes.websocketPort
+      7778
+    )
+  : nem.model.objects.create('endpoint')(
+      nem.model.nodes.defaultMainnet,
+      nem.model.nodes.websocketPort
+    );
 
 const nemWsConnector = nem.com.websockets.connector.create(
   WEBSOCKET_ENDPOINT,
@@ -34,7 +50,9 @@ class App extends Component {
     showCode: false,
     showCopyMessage: false,
     socketConnected: false,
+    sortByValue: true,
     transactionsConfirmed: [],
+    transactionsMax: 100,
     transactionsRecent: [],
     transactionsUnconfirmed: []
   };
@@ -115,7 +133,10 @@ class App extends Component {
 
   handleFetchRecentTransactions = async () => {
     this.newMessage(`${new Date().toLocaleTimeString()}: Fetching recent transactions…`);
-    const transactionsRecent = await fetchIncomingTransactions(ADDRESS);
+    const transactionsRecent = await fetchIncomingTransactions(
+      ADDRESS,
+      this.state.transactionsMax
+    );
     if (transactionsRecent) {
       this.setState({ isLoading: false, transactionsRecent });
       const count = transactionsRecent.length;
@@ -149,6 +170,7 @@ class App extends Component {
               Fetching recent transactions…
             </Loader>
             <TransactionList
+              sortByValue={this.state.sortByValue}
               transactionsRecent={this.state.transactionsRecent}
               transactionsConfirmed={this.state.transactionsConfirmed}
             />

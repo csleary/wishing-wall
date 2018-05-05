@@ -15,7 +15,7 @@ const formatAmount = tx => {
   return 0;
 };
 
-const fetchIncomingTransactions = paymentAddress =>
+const fetchIncomingTransactions = (paymentAddress, transactionsMax) =>
   new Promise(resolve => {
     let txId;
     let total = [];
@@ -32,6 +32,10 @@ const fetchIncomingTransactions = paymentAddress =>
         resolve(total);
       }
 
+      if (total.length >= transactionsMax) {
+        resolve(total);
+      }
+
       txId = currentBatch[currentBatch.length - 1].meta.id;
       total = [...total, ...currentBatch];
 
@@ -41,8 +45,21 @@ const fetchIncomingTransactions = paymentAddress =>
         resolve(total);
       }
     };
-
     fetchTransactions();
+  });
+
+const filterTransactions = transactionList =>
+  transactionList.filter(tx => {
+    if (tx.transaction.type === 257) {
+      return true;
+    }
+    if (
+      tx.transaction.type === 4100 &&
+      tx.transaction.otherTrans.type === 257
+    ) {
+      return true;
+    }
+    return false;
   });
 
 const renderMessage = tx => {
@@ -80,20 +97,7 @@ const renderMessage = tx => {
 };
 
 const sortTransactions = transactionList => {
-  const filtered = transactionList.filter(tx => {
-    if (tx.transaction.type === 257) {
-      return true;
-    }
-    if (
-      tx.transaction.type === 4100 &&
-      tx.transaction.otherTrans.type === 257
-    ) {
-      return true;
-    }
-    return false;
-  });
-
-  const sorted = filtered.sort((a, b) => {
+  const sorted = transactionList.sort((a, b) => {
     const checkType = tx => {
       if (tx.transaction.type === 4100) {
         return tx.transaction.otherTrans.amount;
@@ -109,6 +113,7 @@ const sortTransactions = transactionList => {
 
 export {
   fetchIncomingTransactions,
+  filterTransactions,
   formatAmount,
   renderMessage,
   sortTransactions

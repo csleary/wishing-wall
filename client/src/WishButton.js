@@ -63,7 +63,11 @@ const WishButton = props => (
           <QrCode />
         </Grid.Column>
         <Grid.Column>
-          <p>Please send messages to this address:</p>
+          <p>
+            Please send messages to this
+            {ADDRESS.startsWith('T') ? <em> testnet </em> : ' '}
+            address:
+          </p>
           <div
             className="nem-address"
             role="button"
@@ -93,7 +97,8 @@ const WishButton = props => (
           </p>
           <p>
             Due to the lack of testnet support in the mobile wallets, the QR
-            code will not scan. For now, please copy/paste the address.
+            code will not scan for testnet addresses. For now, please copy/paste
+            the address.
           </p>
         </Grid.Column>
       </Grid.Row>
