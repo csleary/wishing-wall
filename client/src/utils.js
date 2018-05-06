@@ -1,6 +1,5 @@
 import React from 'react';
 import nem from 'nem-sdk';
-import { ENDPOINT } from './App';
 
 const formatAmount = tx => {
   const { nemValue } = nem.utils.format;
@@ -15,13 +14,13 @@ const formatAmount = tx => {
   return 0;
 };
 
-const fetchIncomingTransactions = (paymentAddress, transactionsMax) =>
+const fetchIncomingTransactions = (endpoint, paymentAddress, transactionsMax) =>
   new Promise(resolve => {
     let txId;
     let total = [];
     const fetchTransactions = async () => {
       const incoming = await nem.com.requests.account.transactions.incoming(
-        ENDPOINT,
+        endpoint,
         paymentAddress,
         null,
         txId

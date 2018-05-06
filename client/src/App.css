@@ -23,7 +23,7 @@ body {
 }
 
 .ui.grid .row.wish-button {
-  padding: 2rem;
+  /* padding: 2rem; */
 }
 
 .row.transaction:nth-child(odd) {

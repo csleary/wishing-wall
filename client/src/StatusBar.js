@@ -12,7 +12,9 @@ const StatusBar = props => (
             name="circle"
             title={
               props.socketConnected
-                ? `Connected to NEM Node websocket (${props.node.host}).`
+                ? `Connected to NEM Node websocket (${
+                    props.endpointSocket.host
+                  }).`
                 : 'Currently disconnected!'
             }
           />

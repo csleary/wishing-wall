@@ -32,18 +32,21 @@ const WishButton = props => (
         <Button
           icon
           labelPosition="left"
-          onClick={props.handleClick}
+          onClick={props.handleWishClick}
           size="large"
           style={{
             backgroundColor: '#47a3d1',
             color: '#fff',
-            marginRight: 0,
+            marginRight: '2rem',
             width: '16rem'
           }}
           tabIndex="0"
         >
           <Icon name="qrcode" />
           {props.showCode ? 'Done?' : 'Make a Wish'}
+        </Button>
+        <Button icon onClick={props.handleOptionsClick} size="large">
+          <Icon name="settings" />
         </Button>
       </Grid.Column>
     </Grid.Row>

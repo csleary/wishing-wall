@@ -9,8 +9,9 @@ import {
 
 const TransactionList = props => {
   const transactionList = [
-    ...props.transactionsRecent,
-    ...props.transactionsConfirmed
+    ...props.transactionsUnconfirmed,
+    ...props.transactionsConfirmed,
+    ...props.transactionsRecent
   ];
   const filtered = filterTransactions(transactionList);
   const sorted = props.sortByValue ? sortTransactions(filtered) : filtered;
