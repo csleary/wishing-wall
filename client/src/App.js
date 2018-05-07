@@ -178,7 +178,9 @@ class App extends Component {
         this.setState({ sortByValue: !this.state.sortByValue });
         break;
       case 'transactionsMax':
-        this.setState({ [name]: parseInt(value, 10) });
+        if (value) {
+          this.setState({ [name]: parseInt(value, 10) });
+        }
         break;
       default:
         this.setState({ [name]: value });
@@ -187,13 +189,18 @@ class App extends Component {
 
   handleSubmit = () => {
     this.setState({
-      isUpdating: true,
-      transactionsConfirmed: [],
-      transactionsUnconfirmed: []
+      isUpdating: true
     });
-    this.nemNodeConnect().then(() => {
-      this.handleFetchRecentTransactions();
-    });
+    this.nemNodeConnect()
+      .then(() => {
+        this.handleFetchRecentTransactions();
+      })
+      .catch(err => {
+        this.setState({
+          errors: [...this.state.errors, err],
+          isUpdating: false
+        });
+      });
   };
 
   handleFetchRecentTransactions = async () => {
@@ -208,12 +215,16 @@ class App extends Component {
       this.setState({
         isLoading: false,
         isUpdating: false,
-        transactionsRecent
+        transactionsConfirmed: [],
+        transactionsRecent,
+        transactionsUnconfirmed: []
       });
       const count = transactionsRecent.length;
       const showTransactionsMax =
         transactionsMax < count && transactionsMax !== 100
-          ? ` (displaying top ${transactionsMax})`
+          ? ` (displaying${
+              this.state.sortByValue ? ' top' : ' '
+            } ${transactionsMax})`
           : '';
       this.newMessage(`${new Date().toLocaleTimeString()}: Received ${count} recent transaction${count >
           1 && 's'}${showTransactionsMax}.`);

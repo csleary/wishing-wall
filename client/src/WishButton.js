@@ -37,16 +37,24 @@ const WishButton = props => (
           style={{
             backgroundColor: '#47a3d1',
             color: '#fff',
-            marginRight: '2rem',
+            marginRight: 0,
             width: '16rem'
           }}
           tabIndex="0"
+          title="Click for address information."
         >
           <Icon name="qrcode" />
           {props.showCode ? 'Done?' : 'Make a Wish'}
         </Button>
-        <Button icon onClick={props.handleOptionsClick} size="large">
-          <Icon name="settings" />
+        <Button
+          circular
+          icon
+          onClick={props.handleOptionsClick}
+          size="large"
+          style={{ margin: 0, position: 'absolute', right: 0 }}
+          title="Click to open the settings."
+        >
+          <Icon name="setting" />
         </Button>
       </Grid.Column>
     </Grid.Row>
@@ -56,11 +64,7 @@ const WishButton = props => (
       unmountOnHide
       visible={props.showCode}
     >
-      <Grid.Row
-        centered
-        columns="2"
-        style={{ paddingTop: 0, paddingBottom: '2rem' }}
-      >
+      <Grid.Row centered columns="2">
         <Grid.Column textAlign="center">
           <QrCode address={props.address} />
         </Grid.Column>

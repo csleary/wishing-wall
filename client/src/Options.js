@@ -9,7 +9,7 @@ const Options = props => (
     visible={props.showOptions}
   >
     <Grid centered padded="vertically">
-      <Grid.Column width={10}>
+      <Grid.Column computer={10} mobile={16}>
         <Form onSubmit={props.handleSubmit}>
           <Form.Group>
             <Form.Input

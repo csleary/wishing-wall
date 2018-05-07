@@ -13,6 +13,10 @@ body {
   color: #71685b;
 }
 
+.ui.checked.toggle.checkbox input:checked ~ label::before {
+  background-color: #47a3d1 !important;
+}
+
 .ui.header,
 .ui header h1 a {
   color: #71685b;
@@ -20,10 +24,6 @@ body {
 
 .ui.grid .row.transaction {
   padding: 2rem;
-}
-
-.ui.grid .row.wish-button {
-  /* padding: 2rem; */
 }
 
 .row.transaction:nth-child(odd) {
@@ -58,4 +58,10 @@ body {
 .nem-address::selection {
   background-color: #fff;
   color: #000;
+}
+
+@media only screen and (max-width: 767px) {
+  .ui .form .fields .field {
+    margin-bottom: 1rem;
+  }
 }

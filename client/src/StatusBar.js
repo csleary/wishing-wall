@@ -14,7 +14,7 @@ const StatusBar = props => (
               props.socketConnected
                 ? `Connected to NEM Node websocket (${
                     props.endpointSocket.host
-                  }).`
+                  }:${props.endpointSocket.port}).`
                 : 'Currently disconnected!'
             }
           />

@@ -7,6 +7,49 @@ import {
   sortTransactions
 } from './utils';
 
+const renderIcon = (sortByValue, index) => {
+  if (index === 0 && sortByValue) {
+    return (
+      <Icon
+        circular
+        fitted
+        name="trophy"
+        size="large"
+        style={{
+          backgroundColor: '#ff9f1a',
+          boxShadow: 'none',
+          color: '#fff'
+        }}
+        title="Top message!"
+      />
+    );
+  } else if (index === 0 && !sortByValue) {
+    return (
+      <Icon
+        name="clock"
+        size="big"
+        style={{
+          color: '#d2c3ac',
+          marginLeft: '0.4rem',
+          marginRight: 0
+        }}
+        title="Most recent message."
+      />
+    );
+  }
+  return (
+    <Icon
+      name="comment"
+      size="large"
+      style={{
+        color: '#d2c3ac',
+        marginLeft: '0.6rem',
+        marginRight: 0
+      }}
+    />
+  );
+};
+
 const TransactionList = props => {
   const transactionList = [
     ...props.transactionsUnconfirmed,
@@ -25,30 +68,7 @@ const TransactionList = props => {
         width={2}
         verticalAlign="top"
       >
-        {index === 0 ? (
-          <Icon
-            circular
-            fitted
-            name="trophy"
-            size="large"
-            style={{
-              backgroundColor: '#ff9f1a',
-              boxShadow: 'none',
-              color: '#fff'
-            }}
-            title="Top message!"
-          />
-        ) : (
-          <Icon
-            name="comment"
-            size="large"
-            style={{
-              color: '#d2c3ac',
-              marginLeft: '0.6rem',
-              marginRight: 0
-            }}
-          />
-        )}
+        {renderIcon(props.sortByValue, index)}
       </Grid.Column>
       <Grid.Column textAlign="center" verticalAlign="middle" width={12}>
         <Header
