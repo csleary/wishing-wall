@@ -28,6 +28,7 @@ class App extends Component {
     messages: [],
     showCode: false,
     showCopyMessage: false,
+    showEmbedCode: false,
     showOptions: false,
     socketConnected: false,
     sortByValue: true,
@@ -162,7 +163,15 @@ class App extends Component {
   };
 
   handleOptionsClick = () => {
-    this.setState({ showCode: false, showOptions: !this.state.showOptions });
+    this.setState({
+      showCode: false,
+      showEmbedCode: false,
+      showOptions: !this.state.showOptions
+    });
+  };
+
+  handleEmbedClick = () => {
+    this.setState({ showEmbedCode: !this.state.showEmbedCode });
   };
 
   handleCopyTimeout = () => {
@@ -277,8 +286,10 @@ class App extends Component {
             errors={this.state.errors}
             formErrors={this.state.formErrors}
             handleChange={this.handleChange}
+            handleEmbedClick={this.handleEmbedClick}
             handleSubmit={this.handleSubmit}
             isUpdating={this.state.isUpdating}
+            showEmbedCode={this.state.showEmbedCode}
             showOptions={this.state.showOptions}
             sortByValue={this.state.sortByValue}
             transactionsMax={this.state.transactionsMax}

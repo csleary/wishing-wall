@@ -47,14 +47,43 @@ const Options = props => (
               <Icon
                 circular
                 inverted
-                label="Save your options as a link:"
                 link
                 name="linkify"
                 style={{ marginLeft: '1rem' }}
                 title="Bookmark this link to save your address/options."
               />
             </a>
+            <Icon
+              circular
+              inverted
+              link
+              onClick={props.handleEmbedClick}
+              name="code"
+              style={{ marginLeft: '1rem' }}
+              title="Click to show widget/embed code to add a Wishing Wall to your site."
+            />
           </Form.Group>
+          {props.showEmbedCode && (
+            <Form.Group>
+              <Form.TextArea
+                label="Embed a Wishing Wall on your own site:"
+                readOnly
+                rows={1}
+                style={{
+                  resize: 'none',
+                  wordBreak: 'break-all'
+                }}
+                value={`<iframe src="${window.location.protocol}//${
+                  window.location.host
+                }?address=${props.address}&sortByValue=${
+                  props.sortByValue
+                }&max=${
+                  props.transactionsMax
+                }" height="500px" width="100%"></iframe>`}
+                width={16}
+              />
+            </Form.Group>
+          )}
           <Form.Group inline>
             <Form.Button loading={props.isUpdating} type="submit">
               Update
