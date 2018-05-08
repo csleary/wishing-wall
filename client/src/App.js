@@ -21,6 +21,7 @@ class App extends Component {
     address: ADDRESS,
     endpoint: {},
     errors: [],
+    formErrors: [],
     height: null,
     isLoading: true,
     isUpdating: false,
@@ -183,24 +184,40 @@ class App extends Component {
         }
         break;
       default:
-        this.setState({ [name]: value });
+        this.setState({ [name]: value.trim() });
     }
   };
 
+  validateForm = () => {
+    const errors = {};
+    if (!nem.model.address.isValid(this.state.address)) {
+      errors.address = 'Invalid address. Please double-check it.';
+    }
+    return { errors, isValid: !Object.getOwnPropertyNames(errors).length > 0 };
+  };
+
+  isValid = () => {
+    const { errors, isValid } = this.validateForm();
+    this.setState({ formErrors: errors });
+    return isValid;
+  };
+
   handleSubmit = () => {
-    this.setState({
-      isUpdating: true
-    });
-    this.nemNodeConnect()
-      .then(() => {
-        this.handleFetchRecentTransactions();
-      })
-      .catch(err => {
-        this.setState({
-          errors: [...this.state.errors, err],
-          isUpdating: false
-        });
+    if (this.isValid()) {
+      this.setState({
+        isUpdating: true
       });
+      this.nemNodeConnect()
+        .then(() => {
+          this.handleFetchRecentTransactions();
+        })
+        .catch(err => {
+          this.setState({
+            errors: [...this.state.errors, err],
+            isUpdating: false
+          });
+        });
+    }
   };
 
   handleFetchRecentTransactions = async () => {
@@ -257,6 +274,8 @@ class App extends Component {
           />
           <Options
             address={this.state.address}
+            errors={this.state.errors}
+            formErrors={this.state.formErrors}
             handleChange={this.handleChange}
             handleSubmit={this.handleSubmit}
             isUpdating={this.state.isUpdating}

@@ -30,8 +30,8 @@ const renderIcon = (sortByValue, index) => {
         size="big"
         style={{
           color: '#d2c3ac',
-          marginLeft: '0.4rem',
-          marginRight: 0
+          fontSize: '3rem',
+          margin: '0 0 0 -.25rem'
         }}
         title="Most recent message."
       />
@@ -43,7 +43,7 @@ const renderIcon = (sortByValue, index) => {
       size="large"
       style={{
         color: '#d2c3ac',
-        marginLeft: '0.6rem',
+        marginLeft: '0.5rem',
         marginRight: 0
       }}
     />
