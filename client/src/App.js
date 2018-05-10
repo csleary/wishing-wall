@@ -1,6 +1,7 @@
 import nem from 'nem-sdk';
 import React, { Component } from 'react';
 import { Container, Loader, Grid } from 'semantic-ui-react';
+import Stomp from 'stompjs';
 import Footer from './Footer';
 import Header from './Header';
 import Options from './Options';
@@ -103,55 +104,55 @@ class App extends Component {
 
       this.setState(() => ({ endpointSocket }));
 
-      const connector = nem.com.websockets.connector.create(
-        endpointSocket,
-        address
-      );
+      const { host, port } = endpointSocket;
+      const hostAddress = host.split('://')[1];
+      const url = `ws://${hostAddress}:${port}/w/messages/websocket`;
+      const socket = new WebSocket(url);
+      const client = Stomp.over(socket);
+      client.debug = undefined;
 
-      connector.connect().then(
-        () => {
+      client.connect({}, () => {
+        this.setState({
+          socketConnected: true
+        });
+
+        client.subscribe('/blocks/new', data => {
+          const res = JSON.parse(data.body);
           this.setState({
-            socketConnected: true
+            height: res.height
           });
+        });
 
-          nem.com.websockets.subscribe.chain.height(connector, res => {
-            this.setState({
-              height: res.height
-            });
+        client.subscribe('/errors', data => {
+          const err = JSON.parse(data.body);
+          this.setState({
+            errors: [...this.state.errors, err]
           });
+        });
 
-          nem.com.websockets.subscribe.account.transactions.confirmed(
-            connector,
-            res => {
-              this.setState({
-                transactionsConfirmed: [
-                  ...this.state.transactionsConfirmed,
-                  res
-                ],
-                transactionsUnconfirmed: this.state.transactionsUnconfirmed.filter(tx => !this.state.transactionsConfirmed.includes(tx))
-              });
-              this.newMessage(`${new Date().toLocaleTimeString()}: Received confirmed transaction!`);
-            }
-          );
+        client.subscribe(`/unconfirmed/${this.state.address}`, data => {
+          const res = JSON.parse(data.body);
+          this.setState({
+            transactionsUnconfirmed: [
+              res,
+              ...this.state.transactionsUnconfirmed
+            ]
+          });
+          this.newMessage(`${new Date().toLocaleTimeString()}: Received unconfirmed transaction.`);
+        });
 
-          nem.com.websockets.subscribe.account.transactions.unconfirmed(
-            connector,
-            res => {
-              this.setState({
-                transactionsUnconfirmed: [
-                  ...this.state.transactionsUnconfirmed,
-                  res
-                ]
-              });
-              this.newMessage(`${new Date().toLocaleTimeString()}: Received unconfirmed transaction.`);
-            }
-          );
-          resolve();
-        },
-        err => {
-          this.setState({ errors: [...this.state.errors, err] });
-        }
-      );
+        client.subscribe(`/transactions/${this.state.address}`, data => {
+          const res = JSON.parse(data.body);
+          this.setState({
+            transactionsConfirmed: [res, ...this.state.transactionsConfirmed],
+            transactionsUnconfirmed: this.state.transactionsUnconfirmed.filter(unconfirmed =>
+                this.state.transactionsConfirmed.forEach(confirmed =>
+                    unconfirmed.meta.hash.data === confirmed.meta.hash.data))
+          });
+          this.newMessage(`${new Date().toLocaleTimeString()}: Received confirmed transaction!`);
+        });
+      });
+      resolve();
     });
 
   newMessage = message => {
@@ -299,6 +300,7 @@ class App extends Component {
               Fetching recent transactions…
             </Loader>
             <TransactionList
+              height={this.state.height}
               sortByValue={this.state.sortByValue}
               transactionsConfirmed={this.state.transactionsConfirmed}
               transactionsUnconfirmed={this.state.transactionsUnconfirmed}

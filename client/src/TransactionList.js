@@ -1,5 +1,5 @@
 import React from 'react';
-import { Grid, Icon, Header } from 'semantic-ui-react';
+import { Grid, Icon, Header, Label } from 'semantic-ui-react';
 import {
   filterTransactions,
   formatAmount,
@@ -50,6 +50,13 @@ const renderIcon = (sortByValue, index) => {
   );
 };
 
+const isUnconfirmed = (height, tx) => {
+  if (height && tx.meta.height > height) {
+    return true;
+  }
+  return false;
+};
+
 const TransactionList = props => {
   const transactionList = [
     ...props.transactionsUnconfirmed,
@@ -62,6 +69,14 @@ const TransactionList = props => {
 
   return sorted.map((tx, index) => (
     <Grid.Row className="transaction" key={tx.meta.hash.data}>
+      {isUnconfirmed(props.height, tx) && (
+        <Label
+          corner="right"
+          color="red"
+          icon="clock"
+          title="This transaction has not yet been confirmed by the network."
+        />
+      )}
       <Grid.Column
         style={{ padding: 0 }}
         textAlign="left"
