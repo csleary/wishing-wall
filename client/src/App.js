@@ -15,7 +15,9 @@ const ADDRESS = 'TDJO3IMOI4QNYVYWWLCRQZ25W2QFRWHTLPK5WSL7';
 class App extends Component {
   constructor(props) {
     super(props);
-    this.copyMessageDelay = null;
+    this.copyMessageDelay;
+    this.client;
+    this.socket;
   }
 
   state = {
@@ -107,30 +109,35 @@ class App extends Component {
       const { host, port } = endpointSocket;
       const hostAddress = host.split('://')[1];
       const url = `ws://${hostAddress}:${port}/w/messages/websocket`;
-      const socket = new WebSocket(url);
-      const client = Stomp.over(socket);
-      client.debug = undefined;
 
-      client.connect({}, () => {
+      if (this.socket) {
+        this.socket.close();
+      }
+
+      this.socket = new WebSocket(url);
+      this.client = Stomp.over(this.socket);
+      this.client.debug = undefined;
+
+      this.client.connect({}, () => {
         this.setState({
           socketConnected: true
         });
 
-        client.subscribe('/blocks/new', data => {
+        this.client.subscribe('/blocks/new', data => {
           const res = JSON.parse(data.body);
           this.setState({
             height: res.height
           });
         });
 
-        client.subscribe('/errors', data => {
+        this.client.subscribe('/errors', data => {
           const err = JSON.parse(data.body);
           this.setState({
             errors: [...this.state.errors, err]
           });
         });
 
-        client.subscribe(`/unconfirmed/${this.state.address}`, data => {
+        this.client.subscribe(`/unconfirmed/${this.state.address}`, data => {
           const res = JSON.parse(data.body);
           this.setState({
             transactionsUnconfirmed: [
@@ -141,7 +148,7 @@ class App extends Component {
           this.newMessage(`${new Date().toLocaleTimeString()}: Received unconfirmed transaction.`);
         });
 
-        client.subscribe(`/transactions/${this.state.address}`, data => {
+        this.client.subscribe(`/transactions/${this.state.address}`, data => {
           const res = JSON.parse(data.body);
           this.setState({
             transactionsConfirmed: [res, ...this.state.transactionsConfirmed],
@@ -232,6 +239,11 @@ class App extends Component {
 
   handleFetchRecentTransactions = async () => {
     const { endpoint, address, transactionsMax } = this.state;
+
+    nem.com.requests.chain.height(endpoint).then(res => {
+      this.setState({ height: res.height });
+    });
+
     this.newMessage(`${new Date().toLocaleTimeString()}: Fetching recent transactions…`);
     const transactionsRecent = await fetchIncomingTransactions(
       endpoint,
