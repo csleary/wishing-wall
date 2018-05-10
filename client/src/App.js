@@ -15,9 +15,9 @@ const ADDRESS = 'TDJO3IMOI4QNYVYWWLCRQZ25W2QFRWHTLPK5WSL7';
 class App extends Component {
   constructor(props) {
     super(props);
-    this.copyMessageDelay;
-    this.client;
-    this.socket;
+    this.copyMessageDelay = null;
+    this.client = null;
+    this.socket = null;
   }
 
   state = {
@@ -145,18 +145,20 @@ class App extends Component {
               ...this.state.transactionsUnconfirmed
             ]
           });
-          this.newMessage(`${new Date().toLocaleTimeString()}: Received unconfirmed transaction.`);
+          this.newMessage(`${new Date().toLocaleTimeString()}: Received unconfirmed transaction…`);
         });
 
         this.client.subscribe(`/transactions/${this.state.address}`, data => {
           const res = JSON.parse(data.body);
+          const hash = res.meta.hash.data;
+          const shortHash = `${hash.substring(0, 4)}…${hash.substring(hash.length - 4)}`;
           this.setState({
             transactionsConfirmed: [res, ...this.state.transactionsConfirmed],
             transactionsUnconfirmed: this.state.transactionsUnconfirmed.filter(unconfirmed =>
                 this.state.transactionsConfirmed.forEach(confirmed =>
                     unconfirmed.meta.hash.data === confirmed.meta.hash.data))
           });
-          this.newMessage(`${new Date().toLocaleTimeString()}: Received confirmed transaction!`);
+          this.newMessage(`${new Date().toLocaleTimeString()}: Transaction ${shortHash} confirmed!`);
         });
       });
       resolve();
