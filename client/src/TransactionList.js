@@ -63,7 +63,7 @@ const TransactionList = props => {
     ...props.transactionsConfirmed,
     ...props.transactionsRecent
   ];
-  const filtered = filterTransactions(transactionList);
+  const filtered = filterTransactions(props.address, transactionList);
   const sorted = props.sortByValue ? sortTransactions(filtered) : filtered;
   sorted.length = props.transactionsMax;
 

@@ -312,6 +312,7 @@ class App extends Component {
               Fetching recent transactions…
             </Loader>
             <TransactionList
+              address={this.state.address}
               height={this.state.height}
               sortByValue={this.state.sortByValue}
               transactionsConfirmed={this.state.transactionsConfirmed}

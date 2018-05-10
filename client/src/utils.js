@@ -47,14 +47,15 @@ const fetchIncomingTransactions = (endpoint, paymentAddress, transactionsMax) =>
     fetchTransactions();
   });
 
-const filterTransactions = transactionList =>
+const filterTransactions = (address, transactionList) =>
   transactionList.filter(tx => {
-    if (tx.transaction.type === 257) {
+    if (tx.transaction.type === 257 && tx.transaction.recipient === address) {
       return true;
     }
     if (
       tx.transaction.type === 4100 &&
-      tx.transaction.otherTrans.type === 257
+      tx.transaction.otherTrans.type === 257 &&
+      tx.transaction.otherTrans.recipient === address
     ) {
       return true;
     }
