@@ -101,11 +101,6 @@ const WishButton = props => (
             Both multisig and normal transfer transactions are supported (not
             encrypted).
           </p>
-          <p>
-            Due to the lack of testnet support in the mobile wallets, the QR
-            code will not scan for testnet addresses. For now, please copy/paste
-            the address.
-          </p>
         </Grid.Column>
       </Grid.Row>
     </Transition>

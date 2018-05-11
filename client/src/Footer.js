@@ -15,6 +15,17 @@ const Footer = props => (
           </Statistic.Value>
         </Statistic>
       </Transition>
+      <p>
+        To support continued development, donations on{' '}
+        <a
+          href={`${window.location.protocol}${
+            window.location.pathname
+          }?address=NAER66DXCNYEBNMTWAPKG7CU27CMUPTQQDSM2KL6&sortByValue=true&max=20`}
+        >
+          my own Wishing Wall
+        </a>{' '}
+        are very welcome.
+      </p>
     </Grid.Column>
   </Grid.Row>
 );

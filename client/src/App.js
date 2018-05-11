@@ -10,7 +10,8 @@ import TransactionList from './TransactionList';
 import WishButton from './WishButton';
 import { fetchIncomingTransactions } from './utils';
 
-const ADDRESS = 'TDJO3IMOI4QNYVYWWLCRQZ25W2QFRWHTLPK5WSL7';
+// const ADDRESS = 'TDJO3IMOI4QNYVYWWLCRQZ25W2QFRWHTLPK5WSL7';
+const ADDRESS = 'NAER66DXCNYEBNMTWAPKG7CU27CMUPTQQDSM2KL6';
 
 class App extends Component {
   constructor(props) {
@@ -72,6 +73,14 @@ class App extends Component {
       resolve();
     });
 
+  socketConnect = () => {
+    if (!this.socket || this.socket.readyState !== 1) {
+      this.socket = new WebSocket(this.socketUrl());
+      this.client = Stomp.over(this.socket);
+      this.client.debug = undefined;
+    }
+  };
+
   nemNodeConnect = () =>
     new Promise(resolve => {
       let endpoint;
@@ -80,48 +89,36 @@ class App extends Component {
 
       if (address.startsWith('T')) {
         endpoint = nem.model.objects.create('endpoint')(
+          // nem.model.nodes.defaultTestnet,
           'http://23.228.67.85',
           nem.model.nodes.defaultPort
+        );
+        endpointSocket = nem.model.objects.create('endpoint')(
+          'http://23.228.67.85',
+          nem.model.nodes.websocketPort
         );
       } else {
         endpoint = nem.model.objects.create('endpoint')(
           nem.model.nodes.defaultMainnet,
+          // 'https://frankfurt.nemchina.com',
           nem.model.nodes.defaultPort
+          // 7891 // https
         );
-      }
-
-      this.setState(() => ({ endpoint }));
-
-      if (address.startsWith('T')) {
-        endpointSocket = nem.model.objects.create('endpoint')(
-          'http://23.228.67.85',
-          nem.model.nodes.websocketPort
-        );
-      } else {
         endpointSocket = nem.model.objects.create('endpoint')(
           nem.model.nodes.defaultMainnet,
+          // 'https://frankfurt.nemchina.com',
           nem.model.nodes.websocketPort
+          // 7779 // wss
         );
       }
+      this.setState(() => ({ endpoint, endpointSocket }));
 
-      this.setState(() => ({ endpointSocket }));
-
-      const { host, port } = endpointSocket;
-      const hostAddress = host.split('://')[1];
-      const url = `ws://${hostAddress}:${port}/w/messages/websocket`;
-
-      if (this.socket) {
-        this.socket.close();
-      }
-
-      this.socket = new WebSocket(url);
-      this.client = Stomp.over(this.socket);
-      this.client.debug = undefined;
-
-      this.client.connect({}, () => {
+      const clientSuccess = () => {
         this.setState({
           socketConnected: true
         });
+
+        this.newMessage(`${new Date().toLocaleTimeString()}: Websocket connected.`);
 
         this.client.subscribe('/blocks/new', data => {
           const res = JSON.parse(data.body);
@@ -151,7 +148,7 @@ class App extends Component {
         this.client.subscribe(`/transactions/${this.state.address}`, data => {
           const res = JSON.parse(data.body);
           const hash = res.meta.hash.data;
-          const shortHash = `${hash.substring(0, 4)}…${hash.substring(hash.length - 4)}`;
+          const shortHash = `${hash.substring(0, 3)}…${hash.substring(hash.length - 3)}`;
           this.setState({
             transactionsConfirmed: [res, ...this.state.transactionsConfirmed],
             transactionsUnconfirmed: this.state.transactionsUnconfirmed.filter(unconfirmed =>
@@ -160,9 +157,29 @@ class App extends Component {
           });
           this.newMessage(`${new Date().toLocaleTimeString()}: Transaction ${shortHash} confirmed!`);
         });
-      });
-      resolve();
+        resolve();
+      };
+
+      const clientError = () => {
+        this.setState({
+          socketConnected: false
+        });
+
+        this.newMessage(`${new Date().toLocaleTimeString()}: Websocket error. Reconnecting…`);
+        this.socketConnect();
+        this.client.connect({}, clientSuccess, clientError);
+      };
+
+      this.socketConnect();
+      this.client.connect({}, clientSuccess, clientError);
     });
+
+  socketUrl = () => {
+    const { host, port } = this.state.endpointSocket;
+    const hostAddress = host.split('://')[1];
+    const socketProtocol = host.split('://')[0] === 'https' ? 'wss' : 'ws';
+    return `${socketProtocol}://${hostAddress}:${port}/w/messages/websocket`;
+  };
 
   newMessage = message => {
     this.setState({ messages: [message, ...this.state.messages] });
@@ -192,50 +209,68 @@ class App extends Component {
     }, 2000);
   };
 
+  handleBlur = e => {
+    const { name } = e.target;
+    let { value } = e.target;
+    const errors = {};
+    switch (name) {
+      case 'address':
+        value = value.trim().replace(/-/g, '');
+        if (!nem.model.address.isValid(value)) {
+          errors.address = 'Invalid address. Please double-check it.';
+        }
+        this.setState({ [name]: value });
+        break;
+      default:
+        break;
+    }
+    const valid = !Object.getOwnPropertyNames(errors).length > 0;
+    this.setState({ formErrors: errors, valid });
+  };
+
   handleChange = (e, { name, value }) => {
+    this.setState({ formErrors: { [name]: null } });
     switch (name) {
       case 'sortByValue':
-        this.setState({ sortByValue: !this.state.sortByValue });
+        this.setState({ [name]: !this.state.sortByValue });
         break;
       case 'transactionsMax':
         if (value) {
           this.setState({ [name]: parseInt(value, 10) });
+        } else {
+          this.setState({ [name]: 0 });
         }
         break;
       default:
-        this.setState({ [name]: value.trim() });
+        this.setState({ [name]: value });
+        break;
     }
   };
 
-  validateForm = () => {
-    const errors = {};
-    if (!nem.model.address.isValid(this.state.address)) {
-      errors.address = 'Invalid address. Please double-check it.';
+  formValid = () => {
+    if (Object.getOwnPropertyNames(this.state.formErrors).length > 0) {
+      return false;
     }
-    return { errors, isValid: !Object.getOwnPropertyNames(errors).length > 0 };
-  };
-
-  isValid = () => {
-    const { errors, isValid } = this.validateForm();
-    this.setState({ formErrors: errors });
-    return isValid;
+    return true;
   };
 
   handleSubmit = () => {
-    if (this.isValid()) {
-      this.setState({
-        isUpdating: true
-      });
-      this.nemNodeConnect()
-        .then(() => {
-          this.handleFetchRecentTransactions();
-        })
-        .catch(err => {
-          this.setState({
-            errors: [...this.state.errors, err],
-            isUpdating: false
-          });
+    if (this.formValid()) {
+      this.client.disconnect(() => {
+        this.setState({
+          isUpdating: true
         });
+        this.nemNodeConnect()
+          .then(() => {
+            this.handleFetchRecentTransactions();
+          })
+          .catch(err => {
+            this.setState({
+              errors: [...this.state.errors, err],
+              isUpdating: false
+            });
+          });
+      });
     }
   };
 
@@ -252,7 +287,8 @@ class App extends Component {
       address,
       transactionsMax
     );
-    if (transactionsRecent) {
+    const count = transactionsRecent.length;
+    if (count) {
       this.setState({
         isLoading: false,
         isUpdating: false,
@@ -260,17 +296,17 @@ class App extends Component {
         transactionsRecent,
         transactionsUnconfirmed: []
       });
-      const count = transactionsRecent.length;
       const showTransactionsMax =
         transactionsMax < count && transactionsMax !== 100
           ? ` (displaying${
               this.state.sortByValue ? ' top' : ' '
             } ${transactionsMax})`
           : '';
-      this.newMessage(`${new Date().toLocaleTimeString()}: Received ${count} recent transaction${count >
-          1 && 's'}${showTransactionsMax}.`);
+      this.newMessage(`${new Date().toLocaleTimeString()}: Received ${count} recent transaction${
+          count === 1 ? '' : 's'
+        }${showTransactionsMax}.`);
     } else {
-      this.setState({ isLoading: false });
+      this.setState({ isLoading: false, isUpdating: false });
       this.newMessage(`${new Date().toLocaleTimeString()}: No recent transactions found.`);
     }
   };
@@ -300,6 +336,7 @@ class App extends Component {
             address={this.state.address}
             errors={this.state.errors}
             formErrors={this.state.formErrors}
+            handleBlur={this.handleBlur}
             handleChange={this.handleChange}
             handleEmbedClick={this.handleEmbedClick}
             handleSubmit={this.handleSubmit}
@@ -308,20 +345,23 @@ class App extends Component {
             showOptions={this.state.showOptions}
             sortByValue={this.state.sortByValue}
             transactionsMax={this.state.transactionsMax}
+            valid={this.state.valid}
           />
           <Grid padded="vertically" stackable style={{ paddingTop: '2rem' }}>
             <Loader active={this.state.isLoading} inline="centered" size="big">
               Fetching recent transactions…
             </Loader>
-            <TransactionList
-              address={this.state.address}
-              height={this.state.height}
-              sortByValue={this.state.sortByValue}
-              transactionsConfirmed={this.state.transactionsConfirmed}
-              transactionsUnconfirmed={this.state.transactionsUnconfirmed}
-              transactionsMax={this.state.transactionsMax}
-              transactionsRecent={this.state.transactionsRecent}
-            />
+            {!this.state.isLoading && (
+              <TransactionList
+                address={this.state.address}
+                height={this.state.height}
+                sortByValue={this.state.sortByValue}
+                transactionsConfirmed={this.state.transactionsConfirmed}
+                transactionsUnconfirmed={this.state.transactionsUnconfirmed}
+                transactionsMax={this.state.transactionsMax}
+                transactionsRecent={this.state.transactionsRecent}
+              />
+            )}
             <Footer height={this.state.height} />
           </Grid>
         </Container>

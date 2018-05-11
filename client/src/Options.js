@@ -15,6 +15,7 @@ const Options = props => (
             <Form.Input
               label="NEM Address"
               name="address"
+              onBlur={props.handleBlur}
               onChange={props.handleChange}
               placeholder="Address"
               value={props.address}
@@ -85,7 +86,11 @@ const Options = props => (
             </Form.Group>
           )}
           <Form.Group inline>
-            <Form.Button loading={props.isUpdating} type="submit">
+            <Form.Button
+              disabled={!props.valid}
+              loading={props.isUpdating}
+              type="submit"
+            >
               Update
             </Form.Button>
             {props.formErrors.address && (

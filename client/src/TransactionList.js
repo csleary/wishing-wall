@@ -65,6 +65,22 @@ const TransactionList = props => {
   ];
   const filtered = filterTransactions(props.address, transactionList);
   const sorted = props.sortByValue ? sortTransactions(filtered) : filtered;
+
+  if (!sorted.length) {
+    return (
+      <Grid.Row>
+        <Grid.Column textAlign="center" verticalAlign="middle">
+          <Header size="large">
+            No wishes have been made using this address.{' '}
+            <span role="img" aria-label="Crying face.">
+              😢
+            </span>
+          </Header>
+        </Grid.Column>
+      </Grid.Row>
+    );
+  }
+
   sorted.length = props.transactionsMax;
 
   return sorted.map((tx, index) => (
@@ -99,7 +115,9 @@ const TransactionList = props => {
         width={2}
         verticalAlign="bottom"
       >
-        <Header size="small">{formatAmount(tx)} XEM</Header>
+        <Header size="small" title={`Hash: ${tx.meta.hash.data}`}>
+          {formatAmount(tx)} XEM
+        </Header>
       </Grid.Column>
     </Grid.Row>
   ));

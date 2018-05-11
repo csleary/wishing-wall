@@ -35,10 +35,9 @@ const fetchIncomingTransactions = (endpoint, paymentAddress, transactionsMax) =>
         resolve(total);
       }
 
-      txId = currentBatch[currentBatch.length - 1].meta.id;
-      total = [...total, ...currentBatch];
-
       if (currentBatch.length === 25) {
+        txId = currentBatch[currentBatch.length - 1].meta.id;
+        total = [...total, ...currentBatch];
         fetchTransactions();
       } else {
         resolve(total);
