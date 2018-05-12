@@ -19,13 +19,14 @@ class App extends Component {
     this.copyMessageDelay = null;
     this.client = null;
     this.socket = null;
+    this.subscriptionBlocks = null;
   }
 
   state = {
     address: ADDRESS,
     endpoint: {},
     errors: [],
-    formErrors: [],
+    formErrors: {},
     height: null,
     isLoading: true,
     isUpdating: false,
@@ -73,12 +74,21 @@ class App extends Component {
       resolve();
     });
 
-  socketConnect = () => {
-    if (!this.socket || this.socket.readyState !== 1) {
-      this.socket = new WebSocket(this.socketUrl());
-      this.client = Stomp.over(this.socket);
-      this.client.debug = undefined;
-    }
+  socketConnect = (clientSuccess, clientError) => {
+    const checkSocket = () => {
+      if (this.socket && this.socket.readyState === 1) {
+        this.socket.close();
+      }
+      if (!this.socket || this.socket.readyState === 3) {
+        this.socket = new WebSocket(this.socketUrl());
+        this.client = Stomp.over(this.socket);
+        this.client.debug = undefined;
+        this.client.connect({}, clientSuccess, clientError);
+      } else {
+        setTimeout(checkSocket, 100);
+      }
+    };
+    checkSocket();
   };
 
   nemNodeConnect = () =>
@@ -120,7 +130,7 @@ class App extends Component {
 
         this.newMessage(`${new Date().toLocaleTimeString()}: Websocket connected.`);
 
-        this.client.subscribe('/blocks/new', data => {
+        this.subscriptionBlocks = this.client.subscribe('/blocks/new', data => {
           const res = JSON.parse(data.body);
           this.setState({
             height: res.height
@@ -164,14 +174,11 @@ class App extends Component {
         this.setState({
           socketConnected: false
         });
-
         this.newMessage(`${new Date().toLocaleTimeString()}: Websocket error. Reconnecting…`);
-        this.socketConnect();
-        this.client.connect({}, clientSuccess, clientError);
-      };
 
-      this.socketConnect();
-      this.client.connect({}, clientSuccess, clientError);
+        this.socketConnect(clientSuccess, clientError);
+      };
+      this.socketConnect(clientSuccess, clientError);
     });
 
   socketUrl = () => {
@@ -229,7 +236,10 @@ class App extends Component {
   };
 
   handleChange = (e, { name, value }) => {
-    this.setState({ formErrors: { [name]: null } });
+    this.setState({
+      formErrors: { [name]: null },
+      valid: true
+    });
     switch (name) {
       case 'sortByValue':
         this.setState({ [name]: !this.state.sortByValue });
