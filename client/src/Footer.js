@@ -8,11 +8,12 @@ const Footer = props => (
         The Wishing Wall is built with <a href="https://nem.io">NEM</a> blocks.
       </p>
       <Transition visible={!!props.height} animation="fade" duration="1000">
-        <Statistic size="small">
+        <Statistic size="small" style={{ color: '#d2c3ac' }}>
           <Statistic.Value style={{ color: '#d2c3ac' }}>
             <Icon name="cube" style={{ paddingRight: '.25rem' }} />
             {props.height}
           </Statistic.Value>
+          <p>{props.network.toUpperCase()}</p>
         </Statistic>
       </Transition>
       <p>

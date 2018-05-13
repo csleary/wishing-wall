@@ -1,4 +1,5 @@
 import React from 'react';
+import nem from 'nem-sdk';
 import { Form, Grid, Icon, Transition } from 'semantic-ui-react';
 
 const Options = props => (
@@ -15,10 +16,9 @@ const Options = props => (
             <Form.Input
               label="NEM Address"
               name="address"
-              onBlur={props.handleBlur}
               onChange={props.handleChange}
               placeholder="Address"
-              value={props.address}
+              value={nem.utils.format.address(props.address)}
               width={12}
             />
             <Form.Input
@@ -87,7 +87,7 @@ const Options = props => (
           )}
           <Form.Group inline>
             <Form.Button
-              disabled={!props.valid}
+              disabled={!props.valid || props.isUpdating}
               loading={props.isUpdating}
               type="submit"
             >

@@ -10,8 +10,8 @@ import TransactionList from './TransactionList';
 import WishButton from './WishButton';
 import { fetchIncomingTransactions } from './utils';
 
-// const ADDRESS = 'TDJO3IMOI4QNYVYWWLCRQZ25W2QFRWHTLPK5WSL7';
-const ADDRESS = 'NAER66DXCNYEBNMTWAPKG7CU27CMUPTQQDSM2KL6';
+const ADDRESS = 'TDJO3IMOI4QNYVYWWLCRQZ25W2QFRWHTLPK5WSL7';
+// const ADDRESS = 'NAER66DXCNYEBNMTWAPKG7CU27CMUPTQQDSM2KL6';
 
 class App extends Component {
   constructor(props) {
@@ -31,6 +31,7 @@ class App extends Component {
     isLoading: true,
     isUpdating: false,
     messages: [],
+    network: '',
     showCode: false,
     showCopyMessage: false,
     showEmbedCode: false,
@@ -107,6 +108,7 @@ class App extends Component {
           'http://23.228.67.85',
           nem.model.nodes.websocketPort
         );
+        this.setState({ network: 'testnet' });
       } else {
         endpoint = nem.model.objects.create('endpoint')(
           nem.model.nodes.defaultMainnet,
@@ -120,6 +122,7 @@ class App extends Component {
           nem.model.nodes.websocketPort
           // 7779 // wss
         );
+        this.setState({ network: 'mainnet' });
       }
       this.setState(() => ({ endpoint, endpointSocket }));
 
@@ -216,31 +219,17 @@ class App extends Component {
     }, 2000);
   };
 
-  handleBlur = e => {
-    const { name } = e.target;
-    let { value } = e.target;
-    const errors = {};
+  handleChange = (e, { name, value }) => {
+    const { formErrors } = this.state;
     switch (name) {
       case 'address':
-        value = value.trim().replace(/-/g, '');
+        this.setState({ [name]: value.trim().replace(/-/g, '') });
         if (!nem.model.address.isValid(value)) {
-          errors.address = 'Invalid address. Please double-check it.';
+          formErrors[name] = 'Invalid address. Please double-check it.';
+        } else {
+          delete formErrors[name];
         }
-        this.setState({ [name]: value });
         break;
-      default:
-        break;
-    }
-    const valid = !Object.getOwnPropertyNames(errors).length > 0;
-    this.setState({ formErrors: errors, valid });
-  };
-
-  handleChange = (e, { name, value }) => {
-    this.setState({
-      formErrors: { [name]: null },
-      valid: true
-    });
-    switch (name) {
       case 'sortByValue':
         this.setState({ [name]: !this.state.sortByValue });
         break;
@@ -252,20 +241,22 @@ class App extends Component {
         }
         break;
       default:
-        this.setState({ [name]: value });
         break;
     }
+    this.setState(...this.state.formErrors, { formErrors });
+    this.validate();
   };
 
-  formValid = () => {
+  validate = () => {
     if (Object.getOwnPropertyNames(this.state.formErrors).length > 0) {
-      return false;
+      this.setState({ valid: false });
+    } else {
+      this.setState({ valid: true });
     }
-    return true;
   };
 
   handleSubmit = () => {
-    if (this.formValid()) {
+    if (this.state.valid) {
       this.client.disconnect(() => {
         this.setState({
           isUpdating: true
@@ -346,7 +337,6 @@ class App extends Component {
             address={this.state.address}
             errors={this.state.errors}
             formErrors={this.state.formErrors}
-            handleBlur={this.handleBlur}
             handleChange={this.handleChange}
             handleEmbedClick={this.handleEmbedClick}
             handleSubmit={this.handleSubmit}
@@ -372,7 +362,7 @@ class App extends Component {
                 transactionsRecent={this.state.transactionsRecent}
               />
             )}
-            <Footer height={this.state.height} />
+            <Footer height={this.state.height} network={this.state.network} />
           </Grid>
         </Container>
       </div>

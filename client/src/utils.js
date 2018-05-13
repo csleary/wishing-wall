@@ -26,14 +26,12 @@ const fetchIncomingTransactions = (endpoint, paymentAddress, transactionsMax) =>
         txId
       );
 
-      const currentBatch = incoming.data;
-      if (!currentBatch.length && !total.length) {
-        resolve(total);
-      } else if (total.length >= transactionsMax) {
+      const currentBatch = incoming.data || [];
+      total = [...total, ...currentBatch];
+      if (total.length >= transactionsMax) {
         resolve(total);
       } else if (currentBatch.length === 25) {
         txId = currentBatch[currentBatch.length - 1].meta.id;
-        total = [...total, ...currentBatch];
         fetchTransactions();
       } else {
         resolve(total);
