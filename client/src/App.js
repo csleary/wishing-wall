@@ -355,6 +355,7 @@ class App extends Component {
               <TransactionList
                 address={this.state.address}
                 height={this.state.height}
+                network={this.state.network}
                 sortByValue={this.state.sortByValue}
                 transactionsConfirmed={this.state.transactionsConfirmed}
                 transactionsUnconfirmed={this.state.transactionsUnconfirmed}

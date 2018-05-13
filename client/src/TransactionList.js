@@ -1,5 +1,6 @@
 import React from 'react';
-import { Grid, Icon, Header, Label } from 'semantic-ui-react';
+import nem from 'nem-sdk';
+import { Grid, Icon, Header, Label, Popup } from 'semantic-ui-react';
 import {
   filterTransactions,
   formatAmount,
@@ -47,6 +48,19 @@ const renderIcon = (sortByValue, index) => {
         marginRight: 0
       }}
     />
+  );
+};
+
+const shortHash = (network, hash) => {
+  console.log(network);
+  const explorer =
+    network === 'testnet'
+      ? 'http://bob.nem.ninja:8765/#/transfer/'
+      : 'http://explorer.nemchina.com/#/s_tx?hash=';
+  return (
+    <a href={`${explorer}${hash}`}>
+      {`${hash.substring(0, 8)}…${hash.substring(hash.length - 8)}`}
+    </a>
   );
 };
 
@@ -115,9 +129,18 @@ const TransactionList = props => {
         width={2}
         verticalAlign="bottom"
       >
-        <Header size="small" title={`Hash: ${tx.meta.hash.data}`}>
-          {formatAmount(tx)} XEM
-        </Header>
+        <Popup
+          hoverable
+          inverted
+          position="bottom right"
+          trigger={<Header size="small">{formatAmount(tx)} XEM</Header>}
+        >
+          <p>
+            Hash: {shortHash(props.network, tx.meta.hash.data)}
+            <br />
+            Date: {nem.utils.format.nemDate(tx.transaction.timeStamp)}
+          </p>
+        </Popup>
       </Grid.Column>
     </Grid.Row>
   ));
