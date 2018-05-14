@@ -52,7 +52,6 @@ const renderIcon = (sortByValue, index) => {
 };
 
 const shortHash = (network, hash) => {
-  console.log(network);
   const explorer =
     network === 'testnet'
       ? 'http://bob.nem.ninja:8765/#/transfer/'

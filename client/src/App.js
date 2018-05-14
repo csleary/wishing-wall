@@ -10,8 +10,8 @@ import TransactionList from './TransactionList';
 import WishButton from './WishButton';
 import { fetchIncomingTransactions } from './utils';
 
-const ADDRESS = 'TDJO3IMOI4QNYVYWWLCRQZ25W2QFRWHTLPK5WSL7';
-// const ADDRESS = 'NAER66DXCNYEBNMTWAPKG7CU27CMUPTQQDSM2KL6';
+// const ADDRESS = 'TDJO3IMOI4QNYVYWWLCRQZ25W2QFRWHTLPK5WSL7';
+const ADDRESS = 'NAER66DXCNYEBNMTWAPKG7CU27CMUPTQQDSM2KL6';
 
 class App extends Component {
   constructor(props) {
@@ -83,7 +83,10 @@ class App extends Component {
       if (!this.socket || this.socket.readyState === 3) {
         this.socket = new WebSocket(this.socketUrl());
         this.client = Stomp.over(this.socket);
-        this.client.debug = undefined;
+        // this.client.debug = undefined;
+        this.client.heartbeat.outgoing = 0;
+        this.client.heartbeat.incoming = 0;
+        this.client.maxWebSocketFrameSize = 128 * 1024;
         this.client.connect({}, clientSuccess, clientError);
       } else {
         setTimeout(checkSocket, 100);
@@ -111,16 +114,16 @@ class App extends Component {
         this.setState({ network: 'testnet' });
       } else {
         endpoint = nem.model.objects.create('endpoint')(
-          nem.model.nodes.defaultMainnet,
-          // 'https://frankfurt.nemchina.com',
-          nem.model.nodes.defaultPort
-          // 7891 // https
+          // nem.model.nodes.defaultMainnet,
+          'https://london.nemchina.com',
+          // nem.model.nodes.defaultPort
+          7891 // https
         );
         endpointSocket = nem.model.objects.create('endpoint')(
-          nem.model.nodes.defaultMainnet,
-          // 'https://frankfurt.nemchina.com',
-          nem.model.nodes.websocketPort
-          // 7779 // wss
+          // nem.model.nodes.defaultMainnet,
+          'https://london.nemchina.com',
+          // nem.model.nodes.websocketPort
+          7779 // wss
         );
         this.setState({ network: 'mainnet' });
       }
@@ -221,13 +224,15 @@ class App extends Component {
 
   handleChange = (e, { name, value }) => {
     const { formErrors } = this.state;
+    delete formErrors[name];
     switch (name) {
       case 'address':
         this.setState({ [name]: value.trim().replace(/-/g, '') });
-        if (!nem.model.address.isValid(value)) {
+        if (!value.length) {
+          formErrors[name] =
+            'Please enter the NEM address you wish to monitor.';
+        } else if (!nem.model.address.isValid(value)) {
           formErrors[name] = 'Invalid address. Please double-check it.';
-        } else {
-          delete formErrors[name];
         }
         break;
       case 'sortByValue':
@@ -248,7 +253,7 @@ class App extends Component {
   };
 
   validate = () => {
-    if (Object.getOwnPropertyNames(this.state.formErrors).length > 0) {
+    if (Object.getOwnPropertyNames(this.state.formErrors).length) {
       this.setState({ valid: false });
     } else {
       this.setState({ valid: true });
