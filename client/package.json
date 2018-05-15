@@ -10,9 +10,9 @@
     "react-scripts": "1.1.4",
     "semantic-ui-css": "^2.3.1",
     "semantic-ui-react": "^0.79.1",
-    "socket.io-client": "^2.1.0",
-    "stompjs": "^2.3.3"
+    "socket.io-client": "^2.1.0"
   },
+  "proxy": "http://localhost:5000/",
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",

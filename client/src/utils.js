@@ -14,32 +14,6 @@ const formatAmount = tx => {
   return 0;
 };
 
-const fetchIncomingTransactions = (endpoint, paymentAddress, transactionsMax) =>
-  new Promise(resolve => {
-    let txId;
-    let total = [];
-    const fetchTransactions = async () => {
-      const incoming = await nem.com.requests.account.transactions.incoming(
-        endpoint,
-        paymentAddress,
-        null,
-        txId
-      );
-
-      const currentBatch = incoming.data || [];
-      total = [...total, ...currentBatch];
-      if (total.length >= transactionsMax) {
-        resolve(total);
-      } else if (currentBatch.length === 25) {
-        txId = currentBatch[currentBatch.length - 1].meta.id;
-        fetchTransactions();
-      } else {
-        resolve(total);
-      }
-    };
-    fetchTransactions();
-  });
-
 const filterTransactions = (address, transactionList) =>
   transactionList.filter(tx => {
     if (tx.transaction.type === 257 && tx.transaction.recipient === address) {
@@ -104,10 +78,4 @@ const sortTransactions = transactionList => {
   return unique;
 };
 
-export {
-  fetchIncomingTransactions,
-  filterTransactions,
-  formatAmount,
-  renderMessage,
-  sortTransactions
-};
+export { filterTransactions, formatAmount, renderMessage, sortTransactions };

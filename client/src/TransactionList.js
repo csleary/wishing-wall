@@ -1,5 +1,5 @@
-import React from 'react';
 import nem from 'nem-sdk';
+import React from 'react';
 import { Grid, Icon, Header, Label, Popup } from 'semantic-ui-react';
 import {
   filterTransactions,
@@ -64,7 +64,7 @@ const shortHash = (network, hash) => {
 };
 
 const isUnconfirmed = (height, tx) => {
-  if (height && tx.meta.height > height) {
+  if (height && tx.meta.height === Number.MAX_SAFE_INTEGER) {
     return true;
   }
   return false;

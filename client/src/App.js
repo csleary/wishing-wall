@@ -1,25 +1,21 @@
+import io from 'socket.io-client';
 import nem from 'nem-sdk';
 import React, { Component } from 'react';
 import { Container, Loader, Grid } from 'semantic-ui-react';
-import Stomp from 'stompjs';
 import Footer from './Footer';
 import Header from './Header';
 import Options from './Options';
 import StatusBar from './StatusBar';
 import TransactionList from './TransactionList';
 import WishButton from './WishButton';
-import { fetchIncomingTransactions } from './utils';
 
-// const ADDRESS = 'TDJO3IMOI4QNYVYWWLCRQZ25W2QFRWHTLPK5WSL7';
-const ADDRESS = 'NAER66DXCNYEBNMTWAPKG7CU27CMUPTQQDSM2KL6';
+const ADDRESS = 'TDJO3IMOI4QNYVYWWLCRQZ25W2QFRWHTLPK5WSL7';
 
 class App extends Component {
   constructor(props) {
     super(props);
     this.copyMessageDelay = null;
-    this.client = null;
-    this.socket = null;
-    this.subscriptionBlocks = null;
+    this.socket = io();
   }
 
   state = {
@@ -36,6 +32,7 @@ class App extends Component {
     showCopyMessage: false,
     showEmbedCode: false,
     showOptions: false,
+    showHeader: true,
     socketConnected: false,
     sortByValue: true,
     transactionsConfirmed: [],
@@ -46,7 +43,7 @@ class App extends Component {
 
   async componentDidMount() {
     this.handleParams().then(() => {
-      this.nemNodeConnect().then(() => {
+      this.socketConnect().then(() => {
         this.handleFetchRecentTransactions();
       });
     });
@@ -54,6 +51,7 @@ class App extends Component {
 
   handleParams = () =>
     new Promise(resolve => {
+      const options = ['address', 'max', 'showHeader', 'sortByValue'];
       const queries = window.location.search.length
         ? window.location.search.substring(1).split('&')
         : [];
@@ -61,6 +59,9 @@ class App extends Component {
         const pair = query.split('=');
         const key = pair[0];
         const value = pair[1];
+        if (!options.includes(key)) {
+          return;
+        }
         if (value === 'true' || value === 'false') {
           pair[1] = value === 'true';
         }
@@ -75,123 +76,77 @@ class App extends Component {
       resolve();
     });
 
-  socketConnect = (clientSuccess, clientError) => {
-    const checkSocket = () => {
-      if (this.socket && this.socket.readyState === 1) {
-        this.socket.close();
-      }
-      if (!this.socket || this.socket.readyState === 3) {
-        this.socket = new WebSocket(this.socketUrl());
-        this.client = Stomp.over(this.socket);
-        // this.client.debug = undefined;
-        this.client.heartbeat.outgoing = 0;
-        this.client.heartbeat.incoming = 0;
-        this.client.maxWebSocketFrameSize = 128 * 1024;
-        this.client.connect({}, clientSuccess, clientError);
-      } else {
-        setTimeout(checkSocket, 100);
-      }
-    };
-    checkSocket();
-  };
+  socketConnect = () => {
+    if (this.socket.connected) {
+      this.socket.disconnect(true);
+    }
+    return new Promise(resolve => {
+      this.socket.connect();
+      this.socket.emit('address', this.state.address);
 
-  nemNodeConnect = () =>
-    new Promise(resolve => {
-      let endpoint;
-      let endpointSocket;
-      const { address } = this.state;
-
-      if (address.startsWith('T')) {
-        endpoint = nem.model.objects.create('endpoint')(
-          // nem.model.nodes.defaultTestnet,
-          'http://23.228.67.85',
-          nem.model.nodes.defaultPort
-        );
-        endpointSocket = nem.model.objects.create('endpoint')(
-          'http://23.228.67.85',
-          nem.model.nodes.websocketPort
-        );
-        this.setState({ network: 'testnet' });
-      } else {
-        endpoint = nem.model.objects.create('endpoint')(
-          // nem.model.nodes.defaultMainnet,
-          'https://london.nemchina.com',
-          // nem.model.nodes.defaultPort
-          7891 // https
-        );
-        endpointSocket = nem.model.objects.create('endpoint')(
-          // nem.model.nodes.defaultMainnet,
-          'https://london.nemchina.com',
-          // nem.model.nodes.websocketPort
-          7779 // wss
-        );
-        this.setState({ network: 'mainnet' });
-      }
-      this.setState(() => ({ endpoint, endpointSocket }));
-
-      const clientSuccess = () => {
+      this.socket.on('node', ({ endpoint, endpointSocket, network }) => {
         this.setState({
+          endpoint,
+          endpointSocket,
+          network,
           socketConnected: true
         });
-
-        this.newMessage(`${new Date().toLocaleTimeString()}: Websocket connected.`);
-
-        this.subscriptionBlocks = this.client.subscribe('/blocks/new', data => {
-          const res = JSON.parse(data.body);
-          this.setState({
-            height: res.height
-          });
-        });
-
-        this.client.subscribe('/errors', data => {
-          const err = JSON.parse(data.body);
-          this.setState({
-            errors: [...this.state.errors, err]
-          });
-        });
-
-        this.client.subscribe(`/unconfirmed/${this.state.address}`, data => {
-          const res = JSON.parse(data.body);
-          this.setState({
-            transactionsUnconfirmed: [
-              res,
-              ...this.state.transactionsUnconfirmed
-            ]
-          });
-          this.newMessage(`${new Date().toLocaleTimeString()}: Received unconfirmed transaction…`);
-        });
-
-        this.client.subscribe(`/transactions/${this.state.address}`, data => {
-          const res = JSON.parse(data.body);
-          const hash = res.meta.hash.data;
-          const shortHash = `${hash.substring(0, 3)}…${hash.substring(hash.length - 3)}`;
-          this.setState({
-            transactionsConfirmed: [res, ...this.state.transactionsConfirmed],
-            transactionsUnconfirmed: this.state.transactionsUnconfirmed.filter(unconfirmed =>
-                this.state.transactionsConfirmed.forEach(confirmed =>
-                    unconfirmed.meta.hash.data === confirmed.meta.hash.data))
-          });
-          this.newMessage(`${new Date().toLocaleTimeString()}: Transaction ${shortHash} confirmed!`);
-        });
         resolve();
-      };
+      });
 
-      const clientError = () => {
+      this.socket.on('height', height => {
         this.setState({
-          socketConnected: false
+          height
         });
-        this.newMessage(`${new Date().toLocaleTimeString()}: Websocket error. Reconnecting…`);
+      });
 
-        this.socketConnect(clientSuccess, clientError);
-      };
-      this.socketConnect(clientSuccess, clientError);
+      this.socket.on('transactionsUnconfirmed', res => {
+        this.setState({
+          transactionsUnconfirmed: [res, ...this.state.transactionsUnconfirmed]
+        });
+        this.newMessage(`${new Date().toLocaleTimeString()}: Received unconfirmed transaction…`);
+      });
+
+      this.socket.on('transactionsConfirmed', res => {
+        const hash = res.meta.hash.data;
+        const shortHash = `${hash.substring(0, 3)}…${hash.substring(hash.length - 3)}`;
+        this.setState({
+          transactionsUnconfirmed: this.state.transactionsUnconfirmed.filter(unconfirmed => unconfirmed.meta.hash.data !== hash),
+          transactionsConfirmed: [res, ...this.state.transactionsConfirmed]
+        });
+        this.newMessage(`${new Date().toLocaleTimeString()}: Transaction ${shortHash} confirmed!`);
+      });
+
+      this.socket.on('incomingTransactions', res => {
+        const { transactionsMax } = this.state;
+        const count = res.length;
+        if (count) {
+          this.setState({
+            isLoading: false,
+            isUpdating: false,
+            transactionsRecent: res
+          });
+          const showTransactionsMax =
+            transactionsMax < count && transactionsMax !== 100
+              ? ` (displaying${
+                  this.state.sortByValue ? ' top' : ' '
+                } ${transactionsMax})`
+              : '';
+          this.newMessage(`${new Date().toLocaleTimeString()}: Received ${count} recent transaction${
+              count === 1 ? '' : 's'
+            }${showTransactionsMax}.`);
+        } else {
+          this.setState({ isLoading: false, isUpdating: false });
+          this.newMessage(`${new Date().toLocaleTimeString()}: No recent transactions found.`);
+        }
+      });
+
+      this.socket.on('error', ({ message }) => {
+        this.setState({
+          errors: [...this.state.errors, message]
+        });
+      });
     });
-
-  socketUrl = () => {
-    const { host, port } = this.state.endpointSocket;
-    const hostAddress = host.split('://')[1];
-    const socketProtocol = host.split('://')[0] === 'https' ? 'wss' : 'ws';
-    return `${socketProtocol}://${hostAddress}:${port}/w/messages/websocket`;
   };
 
   newMessage = message => {
@@ -262,59 +217,32 @@ class App extends Component {
 
   handleSubmit = () => {
     if (this.state.valid) {
-      this.client.disconnect(() => {
-        this.setState({
-          isUpdating: true
-        });
-        this.nemNodeConnect()
-          .then(() => {
-            this.handleFetchRecentTransactions();
-          })
-          .catch(err => {
-            this.setState({
-              errors: [...this.state.errors, err],
-              isUpdating: false
-            });
-          });
+      this.setState({
+        isUpdating: true
       });
+      this.socketConnect()
+        .then(() => {
+          this.handleFetchRecentTransactions();
+        })
+        .catch(err => {
+          this.setState({
+            errors: [...this.state.errors, err],
+            isUpdating: false
+          });
+        });
     }
   };
 
-  handleFetchRecentTransactions = async () => {
+  handleFetchRecentTransactions = () => {
     const { endpoint, address, transactionsMax } = this.state;
 
-    nem.com.requests.chain.height(endpoint).then(res => {
-      this.setState({ height: res.height });
-    });
-
     this.newMessage(`${new Date().toLocaleTimeString()}: Fetching recent transactions…`);
-    const transactionsRecent = await fetchIncomingTransactions(
+
+    this.socket.emit('fetchIncomingTransactions', {
       endpoint,
       address,
       transactionsMax
-    );
-    const count = transactionsRecent.length;
-    if (count) {
-      this.setState({
-        isLoading: false,
-        isUpdating: false,
-        transactionsConfirmed: [],
-        transactionsRecent,
-        transactionsUnconfirmed: []
-      });
-      const showTransactionsMax =
-        transactionsMax < count && transactionsMax !== 100
-          ? ` (displaying${
-              this.state.sortByValue ? ' top' : ' '
-            } ${transactionsMax})`
-          : '';
-      this.newMessage(`${new Date().toLocaleTimeString()}: Received ${count} recent transaction${
-          count === 1 ? '' : 's'
-        }${showTransactionsMax}.`);
-    } else {
-      this.setState({ isLoading: false, isUpdating: false });
-      this.newMessage(`${new Date().toLocaleTimeString()}: No recent transactions found.`);
-    }
+    });
   };
 
   render() {
@@ -328,7 +256,7 @@ class App extends Component {
           transactionsMax={this.state.transactionsMax}
         />
         <Container>
-          <Header />
+          {this.state.showHeader && <Header />}
           <WishButton
             address={this.state.address}
             handleOptionsClick={this.handleOptionsClick}
