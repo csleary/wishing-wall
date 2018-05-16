@@ -10,14 +10,10 @@ import TransactionList from './TransactionList';
 import WishButton from './WishButton';
 
 const ADDRESS = 'TDJO3IMOI4QNYVYWWLCRQZ25W2QFRWHTLPK5WSL7';
+let copyMessageDelay = null;
+const socket = io();
 
 class App extends Component {
-  constructor(props) {
-    super(props);
-    this.copyMessageDelay = null;
-    this.socket = io();
-  }
-
   state = {
     address: ADDRESS,
     endpoint: {},
@@ -41,9 +37,10 @@ class App extends Component {
     transactionsUnconfirmed: []
   };
 
-  async componentDidMount() {
+  componentDidMount() {
     this.handleParams().then(() => {
       this.socketConnect().then(() => {
+        this.handleListeners();
         this.handleFetchRecentTransactions();
       });
     });
@@ -76,15 +73,66 @@ class App extends Component {
       resolve();
     });
 
-  socketConnect = () => {
-    if (this.socket.connected) {
-      this.socket.disconnect(true);
-    }
-    return new Promise(resolve => {
-      this.socket.connect();
-      this.socket.emit('address', this.state.address);
+  handleListeners = () => {
+    socket.on('height', height => {
+      this.setState({
+        height
+      });
+    });
 
-      this.socket.on('node', ({ endpoint, endpointSocket, network }) => {
+    socket.on('transactionsUnconfirmed', res => {
+      this.setState({
+        transactionsUnconfirmed: [res, ...this.state.transactionsUnconfirmed]
+      });
+      this.newMessage(`${new Date().toLocaleTimeString()}: Received unconfirmed transaction…`);
+    });
+
+    socket.on('transactionsConfirmed', res => {
+      const hash = res.meta.hash.data;
+      const shortHash = `${hash.substring(0, 3)}…${hash.substring(hash.length - 3)}`;
+      this.setState({
+        transactionsUnconfirmed: this.state.transactionsUnconfirmed.filter(unconfirmed => unconfirmed.meta.hash.data !== hash),
+        transactionsConfirmed: [res, ...this.state.transactionsConfirmed]
+      });
+      this.newMessage(`${new Date().toLocaleTimeString()}: Transaction ${shortHash} confirmed!`);
+    });
+
+    socket.on('incomingTransactions', res => {
+      const { transactionsMax } = this.state;
+      const count = res.length;
+      if (count) {
+        this.setState({
+          isLoading: false,
+          isUpdating: false,
+          transactionsRecent: res
+        });
+        const showTransactionsMax =
+          transactionsMax < count && transactionsMax !== 100
+            ? ` (displaying${
+                this.state.sortByValue ? ' top' : ' '
+              } ${transactionsMax})`
+            : '';
+        this.newMessage(`${new Date().toLocaleTimeString()}: Received ${count} recent transaction${
+            count === 1 ? '' : 's'
+          }${showTransactionsMax}.`);
+      } else {
+        this.setState({ isLoading: false, isUpdating: false });
+        this.newMessage(`${new Date().toLocaleTimeString()}: No recent transactions found.`);
+      }
+    });
+
+    socket.on('error', ({ message }) => {
+      this.setState({
+        errors: [...this.state.errors, message]
+      });
+    });
+  };
+
+  socketConnect = () =>
+    new Promise(resolve => {
+      socket.emit('address', this.state.address);
+
+      socket.on('node', ({ endpoint, endpointSocket, network }) => {
         this.setState({
           endpoint,
           endpointSocket,
@@ -93,61 +141,7 @@ class App extends Component {
         });
         resolve();
       });
-
-      this.socket.on('height', height => {
-        this.setState({
-          height
-        });
-      });
-
-      this.socket.on('transactionsUnconfirmed', res => {
-        this.setState({
-          transactionsUnconfirmed: [res, ...this.state.transactionsUnconfirmed]
-        });
-        this.newMessage(`${new Date().toLocaleTimeString()}: Received unconfirmed transaction…`);
-      });
-
-      this.socket.on('transactionsConfirmed', res => {
-        const hash = res.meta.hash.data;
-        const shortHash = `${hash.substring(0, 3)}…${hash.substring(hash.length - 3)}`;
-        this.setState({
-          transactionsUnconfirmed: this.state.transactionsUnconfirmed.filter(unconfirmed => unconfirmed.meta.hash.data !== hash),
-          transactionsConfirmed: [res, ...this.state.transactionsConfirmed]
-        });
-        this.newMessage(`${new Date().toLocaleTimeString()}: Transaction ${shortHash} confirmed!`);
-      });
-
-      this.socket.on('incomingTransactions', res => {
-        const { transactionsMax } = this.state;
-        const count = res.length;
-        if (count) {
-          this.setState({
-            isLoading: false,
-            isUpdating: false,
-            transactionsRecent: res
-          });
-          const showTransactionsMax =
-            transactionsMax < count && transactionsMax !== 100
-              ? ` (displaying${
-                  this.state.sortByValue ? ' top' : ' '
-                } ${transactionsMax})`
-              : '';
-          this.newMessage(`${new Date().toLocaleTimeString()}: Received ${count} recent transaction${
-              count === 1 ? '' : 's'
-            }${showTransactionsMax}.`);
-        } else {
-          this.setState({ isLoading: false, isUpdating: false });
-          this.newMessage(`${new Date().toLocaleTimeString()}: No recent transactions found.`);
-        }
-      });
-
-      this.socket.on('error', ({ message }) => {
-        this.setState({
-          errors: [...this.state.errors, message]
-        });
-      });
     });
-  };
 
   newMessage = message => {
     this.setState({ messages: [message, ...this.state.messages] });
@@ -170,9 +164,9 @@ class App extends Component {
   };
 
   handleCopyTimeout = () => {
-    clearTimeout(this.copyMessageDelay);
+    clearTimeout(copyMessageDelay);
     this.setState({ showCopyMessage: true });
-    this.copyMessageDelay = setTimeout(() => {
+    copyMessageDelay = setTimeout(() => {
       this.setState({ showCopyMessage: false });
     }, 2000);
   };
@@ -238,7 +232,7 @@ class App extends Component {
 
     this.newMessage(`${new Date().toLocaleTimeString()}: Fetching recent transactions…`);
 
-    this.socket.emit('fetchIncomingTransactions', {
+    socket.emit('fetchIncomingTransactions', {
       endpoint,
       address,
       transactionsMax

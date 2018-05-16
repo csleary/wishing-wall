@@ -1,10 +1,12 @@
 const express = require('express');
-const path = require('path');
+const http = require('http');
+const socketIo = require('socket.io');
 const nem = require('nem-sdk').default;
+const path = require('path');
 
 const app = express();
-const server = require('http').Server(app);
-const io = require('socket.io')(server);
+const server = http.createServer(app);
+const io = socketIo(server);
 
 io.on('connection', socket => {
   socket.on('address', address => {
@@ -112,4 +114,4 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
-server.listen(5000);
+server.listen(8082);
