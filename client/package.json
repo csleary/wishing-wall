@@ -9,8 +9,7 @@
     "react-dom": "^16.3.2",
     "react-scripts": "1.1.4",
     "semantic-ui-css": "^2.3.1",
-    "semantic-ui-react": "^0.79.1",
-    "socket.io-client": "^2.1.0"
+    "semantic-ui-react": "^0.79.1"
   },
   "proxy": "http://localhost:8082/",
   "scripts": {

@@ -73,7 +73,6 @@ const isUnconfirmed = (height, tx) => {
 const TransactionList = props => {
   const transactionList = [
     ...props.transactionsUnconfirmed,
-    ...props.transactionsConfirmed,
     ...props.transactionsRecent
   ];
   const filtered = filterTransactions(props.address, transactionList);

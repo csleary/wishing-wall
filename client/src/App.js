@@ -1,4 +1,3 @@
-import io from 'socket.io-client';
 import nem from 'nem-sdk';
 import React, { Component } from 'react';
 import { Container, Loader, Grid } from 'semantic-ui-react';
@@ -11,7 +10,8 @@ import WishButton from './WishButton';
 
 const ADDRESS = 'TDJO3IMOI4QNYVYWWLCRQZ25W2QFRWHTLPK5WSL7';
 let copyMessageDelay = null;
-const socket = io();
+let socket;
+const socketUrl = 'ws://localhost:8082';
 
 class App extends Component {
   state = {
@@ -31,7 +31,6 @@ class App extends Component {
     showHeader: true,
     socketConnected: false,
     sortByValue: true,
-    transactionsConfirmed: [],
     transactionsMax: 100,
     transactionsRecent: [],
     transactionsUnconfirmed: []
@@ -73,75 +72,121 @@ class App extends Component {
       resolve();
     });
 
-  handleListeners = () => {
-    socket.on('height', height => {
-      this.setState({
-        height
-      });
-    });
+  socketConnect = () =>
+    new Promise(resolve => {
+      const checkSocket = success => {
+        if (!socket || socket.readyState === 3) {
+          socket = new WebSocket(socketUrl);
+        }
+        if (socket && socket.readyState === 1) {
+          success();
+        } else {
+          setTimeout(() => checkSocket(success), 100);
+        }
+      };
 
-    socket.on('transactionsUnconfirmed', res => {
-      this.setState({
-        transactionsUnconfirmed: [res, ...this.state.transactionsUnconfirmed]
-      });
-      this.newMessage(`${new Date().toLocaleTimeString()}: Received unconfirmed transaction…`);
-    });
+      checkSocket(() => {
+        socket.send(JSON.stringify({
+            type: 'address',
+            data: this.state.address
+          }));
 
-    socket.on('transactionsConfirmed', res => {
-      const hash = res.meta.hash.data;
-      const shortHash = `${hash.substring(0, 3)}…${hash.substring(hash.length - 3)}`;
-      this.setState({
-        transactionsUnconfirmed: this.state.transactionsUnconfirmed.filter(unconfirmed => unconfirmed.meta.hash.data !== hash),
-        transactionsConfirmed: [res, ...this.state.transactionsConfirmed]
-      });
-      this.newMessage(`${new Date().toLocaleTimeString()}: Transaction ${shortHash} confirmed!`);
-    });
-
-    socket.on('incomingTransactions', res => {
-      const { transactionsMax } = this.state;
-      const count = res.length;
-      if (count) {
-        this.setState({
-          isLoading: false,
-          isUpdating: false,
-          transactionsRecent: res
+        socket.addEventListener('message', event => {
+          const message = JSON.parse(event.data);
+          if (message.type === 'node') {
+            const { endpoint, endpointSocket, network } = message.data;
+            this.setState({
+              endpoint,
+              endpointSocket,
+              network,
+              socketConnected: true
+            });
+            resolve();
+          }
         });
-        const showTransactionsMax =
-          transactionsMax < count && transactionsMax !== 100
-            ? ` (displaying${
-                this.state.sortByValue ? ' top' : ' '
-              } ${transactionsMax})`
-            : '';
-        this.newMessage(`${new Date().toLocaleTimeString()}: Received ${count} recent transaction${
-            count === 1 ? '' : 's'
-          }${showTransactionsMax}.`);
-      } else {
-        this.setState({ isLoading: false, isUpdating: false });
-        this.newMessage(`${new Date().toLocaleTimeString()}: No recent transactions found.`);
-      }
+      });
     });
 
-    socket.on('error', ({ message }) => {
-      this.setState({
-        errors: [...this.state.errors, message]
-      });
+  handleListeners = () => {
+    socket.addEventListener('message', event => {
+      const message = JSON.parse(event.data);
+      switch (message.type) {
+        case 'height':
+          this.setState({
+            height: message.data
+          });
+          break;
+        case 'transactionsUnconfirmed':
+          return this.handleTransactionsUnconfirmed(message.data);
+        case 'transactionsConfirmed':
+          return this.handleTransactionsConfirmed(message.data);
+        case 'incomingTransactions':
+          return this.handleTransactionsRecent(message.data);
+        case 'error':
+          this.setState({
+            errors: [...this.state.errors, message.data]
+          });
+          break;
+        default:
+          break;
+      }
     });
   };
 
-  socketConnect = () =>
-    new Promise(resolve => {
-      socket.emit('address', this.state.address);
-
-      socket.on('node', ({ endpoint, endpointSocket, network }) => {
-        this.setState({
-          endpoint,
-          endpointSocket,
-          network,
-          socketConnected: true
-        });
-        resolve();
-      });
+  handleTransactionsUnconfirmed = tx => {
+    this.setState({
+      transactionsUnconfirmed: [tx, ...this.state.transactionsUnconfirmed]
     });
+    this.newMessage(`${new Date().toLocaleTimeString()}: Received unconfirmed transaction…`);
+  };
+
+  handleTransactionsConfirmed = tx => {
+    const hash = tx.meta.hash.data;
+    const shortHash = `${hash.substring(0, 3)}…${hash.substring(hash.length - 3)}`;
+    this.setState({
+      transactionsUnconfirmed: this.state.transactionsUnconfirmed.filter(unconfirmed => unconfirmed.meta.hash.data !== hash),
+      transactionsRecent: [tx, ...this.state.transactionsRecent]
+    });
+    this.newMessage(`${new Date().toLocaleTimeString()}: Transaction ${shortHash} confirmed!`);
+  };
+
+  handleTransactionsRecent = transactionsRecent => {
+    const { transactionsMax } = this.state;
+    const count = transactionsRecent.length;
+    if (count) {
+      this.setState({
+        isLoading: false,
+        isUpdating: false,
+        transactionsRecent
+      });
+      const showTransactionsMax =
+        transactionsMax < count && transactionsMax !== 100
+          ? ` (displaying${
+              this.state.sortByValue ? ' top' : ' '
+            } ${transactionsMax})`
+          : '';
+      this.newMessage(`${new Date().toLocaleTimeString()}: Received ${count} recent transaction${
+          count === 1 ? '' : 's'
+        }${showTransactionsMax}.`);
+    } else {
+      this.setState({ isLoading: false, isUpdating: false });
+      this.newMessage(`${new Date().toLocaleTimeString()}: No recent transactions found.`);
+    }
+  };
+
+  handleFetchRecentTransactions = () => {
+    const { endpoint, address, transactionsMax } = this.state;
+    this.newMessage(`${new Date().toLocaleTimeString()}: Fetching recent transactions…`);
+
+    socket.send(JSON.stringify({
+        type: 'fetchIncomingTransactions',
+        data: {
+          endpoint,
+          address,
+          transactionsMax
+        }
+      }));
+  };
 
   newMessage = message => {
     this.setState({ messages: [message, ...this.state.messages] });
@@ -225,18 +270,6 @@ class App extends Component {
           });
         });
     }
-  };
-
-  handleFetchRecentTransactions = () => {
-    const { endpoint, address, transactionsMax } = this.state;
-
-    this.newMessage(`${new Date().toLocaleTimeString()}: Fetching recent transactions…`);
-
-    socket.emit('fetchIncomingTransactions', {
-      endpoint,
-      address,
-      transactionsMax
-    });
   };
 
   render() {
