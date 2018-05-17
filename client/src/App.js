@@ -12,8 +12,9 @@ const ADDRESS = 'TDJO3IMOI4QNYVYWWLCRQZ25W2QFRWHTLPK5WSL7';
 
 let copyMessageDelay = null;
 let socket;
-const protocol = window.location.protocol === 'https://' ? 'wss://' : 'ws://';
-const socketUrl = `${protocol}${window.location.hostname}:8082`;
+const protocol = window.location.protocol === 'http:' ? 'ws:' : 'wss:';
+const port = process.env.NODE_ENV === 'development' ? ':8082' : '';
+const socketUrl = `${protocol}//${window.location.hostname}${port}`;
 
 class App extends Component {
   state = {
@@ -47,6 +48,15 @@ class App extends Component {
       });
     });
   }
+
+  socketReconnect = () => {
+    this.newMessage('Socket disconnected. Reconnecting…');
+    this.socketConnect().then(() => {
+      this.newMessage('Socket reconnected.');
+      this.handleListeners();
+      this.handleFetchRecentTransactions();
+    });
+  };
 
   handleParams = () =>
     new Promise(resolve => {
@@ -84,6 +94,7 @@ class App extends Component {
           socket = new WebSocket(socketUrl);
         }
         if (socket && socket.readyState === 1) {
+          socket.onclose = () => this.socketReconnect();
           success();
         } else {
           setTimeout(() => checkSocket(success), 100);
@@ -119,11 +130,11 @@ class App extends Component {
           });
           break;
         case 'transactionsUnconfirmed':
-          return this.handleTransactionsUnconfirmed(message.data);
+          return this.transactionsUnconfirmed(message.data);
         case 'transactionsConfirmed':
-          return this.handleTransactionsConfirmed(message.data);
+          return this.transactionsConfirmed(message.data);
         case 'incomingTransactions':
-          return this.handleTransactionsRecent(message.data);
+          return this.transactionsRecent(message.data);
         case 'error':
           this.setState({
             errors: [...this.state.errors, message.data]
@@ -135,28 +146,32 @@ class App extends Component {
     });
   };
 
-  handleTransactionsUnconfirmed = tx => {
-    if (!this.state.transactionsUnconfirmed.includes(tx)) {
-      this.setState({
-        transactionsUnconfirmed: [tx, ...this.state.transactionsUnconfirmed]
-      });
-      this.newMessage(`${new Date().toLocaleTimeString()}: Received unconfirmed transaction…`);
-    }
+  transactionsUnconfirmed = tx => {
+    this.setState({
+      transactionsUnconfirmed: [
+        tx,
+        ...this.state.transactionsUnconfirmed.filter(el => el !== tx)
+      ]
+    });
+    this.newMessage(`${new Date().toLocaleTimeString()}: Received unconfirmed transaction…`);
   };
 
-  handleTransactionsConfirmed = tx => {
+  transactionsConfirmed = tx => {
     const hash = tx.meta.hash.data;
     const shortHash = `${hash.substring(0, 3)}…${hash.substring(hash.length - 3)}`;
     this.setState({
       transactionsUnconfirmed: [
-        ...this.state.transactionsUnconfirmed.filter(unconfirmed => unconfirmed.meta.hash.data !== tx.meta.hash.data)
+        ...this.state.transactionsUnconfirmed.filter(el => el.meta.hash.data !== tx.meta.hash.data)
       ],
-      transactionsRecent: [tx, ...this.state.transactionsRecent]
+      transactionsRecent: [
+        tx,
+        ...this.state.transactionsRecent.filter(el => el !== tx)
+      ]
     });
     this.newMessage(`${new Date().toLocaleTimeString()}: Transaction ${shortHash} confirmed!`);
   };
 
-  handleTransactionsRecent = transactionsRecent => {
+  transactionsRecent = transactionsRecent => {
     const { transactionsMax } = this.state;
     const count = transactionsRecent.length;
     if (count) {

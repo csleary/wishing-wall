@@ -6,7 +6,7 @@ const WebSocket = require('ws');
 
 const app = express();
 const server = http.createServer(app);
-const wss = new WebSocket.Server({ server });
+const wss = new WebSocket.Server({ server, clientTracking: true });
 
 const payload = (type, data) => JSON.stringify({ type, data });
 
@@ -46,25 +46,33 @@ const handleEndpoints = (socket, message) => {
   connector.connect().then(
     () => {
       nem.com.websockets.subscribe.chain.height(connector, res => {
-        socket.send(payload('height', res.height));
+        if (socket.readyState === socket.OPEN) {
+          socket.send(payload('height', res.height));
+        }
       });
 
       nem.com.websockets.subscribe.account.transactions.unconfirmed(
         connector,
         res => {
-          socket.send(payload('transactionsUnconfirmed', res));
+          if (socket.readyState === socket.OPEN) {
+            socket.send(payload('transactionsUnconfirmed', res));
+          }
         }
       );
 
       nem.com.websockets.subscribe.account.transactions.confirmed(
         connector,
         res => {
-          socket.send(payload('transactionsConfirmed', res));
+          if (socket.readyState === socket.OPEN) {
+            socket.send(payload('transactionsConfirmed', res));
+          }
         }
       );
     },
     error => {
-      socket.send(payload('error', error));
+      if (socket.readyState === socket.OPEN) {
+        socket.send(payload('error', error));
+      }
     }
   );
   socket.send(payload('node', {
@@ -124,11 +132,9 @@ wss.on('connection', socket => {
   });
 });
 
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.resolve(__dirname, 'client', 'build')));
-  app.get('*', (req, res) => {
-    res.sendFile(path.resolve(__dirname, 'client', 'build', 'index.html'));
-  });
-}
+app.use(express.static(path.resolve(__dirname, 'client', 'build')));
+app.get('/', (req, res) => {
+  res.sendFile(path.resolve(__dirname, 'client', 'build', 'index.html'));
+});
 
 server.listen(8082);
