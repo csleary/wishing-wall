@@ -9,9 +9,11 @@ import TransactionList from './TransactionList';
 import WishButton from './WishButton';
 
 const ADDRESS = 'TDJO3IMOI4QNYVYWWLCRQZ25W2QFRWHTLPK5WSL7';
+
 let copyMessageDelay = null;
 let socket;
-const socketUrl = 'ws://localhost:8082';
+const protocol = window.location.protocol === 'https://' ? 'wss://' : 'ws://';
+const socketUrl = `${protocol}${window.location.hostname}:8082`;
 
 class App extends Component {
   state = {
@@ -33,7 +35,8 @@ class App extends Component {
     sortByValue: true,
     transactionsMax: 100,
     transactionsRecent: [],
-    transactionsUnconfirmed: []
+    transactionsUnconfirmed: [],
+    valid: true
   };
 
   componentDidMount() {
@@ -72,6 +75,8 @@ class App extends Component {
       resolve();
     });
 
+  payload = (type, data) => JSON.stringify({ type, data });
+
   socketConnect = () =>
     new Promise(resolve => {
       const checkSocket = success => {
@@ -86,10 +91,7 @@ class App extends Component {
       };
 
       checkSocket(() => {
-        socket.send(JSON.stringify({
-            type: 'address',
-            data: this.state.address
-          }));
+        socket.send(this.payload('address', this.state.address));
 
         socket.addEventListener('message', event => {
           const message = JSON.parse(event.data);
@@ -134,17 +136,21 @@ class App extends Component {
   };
 
   handleTransactionsUnconfirmed = tx => {
-    this.setState({
-      transactionsUnconfirmed: [tx, ...this.state.transactionsUnconfirmed]
-    });
-    this.newMessage(`${new Date().toLocaleTimeString()}: Received unconfirmed transaction…`);
+    if (!this.state.transactionsUnconfirmed.includes(tx)) {
+      this.setState({
+        transactionsUnconfirmed: [tx, ...this.state.transactionsUnconfirmed]
+      });
+      this.newMessage(`${new Date().toLocaleTimeString()}: Received unconfirmed transaction…`);
+    }
   };
 
   handleTransactionsConfirmed = tx => {
     const hash = tx.meta.hash.data;
     const shortHash = `${hash.substring(0, 3)}…${hash.substring(hash.length - 3)}`;
     this.setState({
-      transactionsUnconfirmed: this.state.transactionsUnconfirmed.filter(unconfirmed => unconfirmed.meta.hash.data !== hash),
+      transactionsUnconfirmed: [
+        ...this.state.transactionsUnconfirmed.filter(unconfirmed => unconfirmed.meta.hash.data !== tx.meta.hash.data)
+      ],
       transactionsRecent: [tx, ...this.state.transactionsRecent]
     });
     this.newMessage(`${new Date().toLocaleTimeString()}: Transaction ${shortHash} confirmed!`);
@@ -178,13 +184,10 @@ class App extends Component {
     const { endpoint, address, transactionsMax } = this.state;
     this.newMessage(`${new Date().toLocaleTimeString()}: Fetching recent transactions…`);
 
-    socket.send(JSON.stringify({
-        type: 'fetchIncomingTransactions',
-        data: {
-          endpoint,
-          address,
-          transactionsMax
-        }
+    socket.send(this.payload('fetchIncomingTransactions', {
+        endpoint,
+        address,
+        transactionsMax
       }));
   };
 
@@ -315,6 +318,7 @@ class App extends Component {
               <TransactionList
                 address={this.state.address}
                 height={this.state.height}
+                isUpdating={this.state.isUpdating}
                 network={this.state.network}
                 sortByValue={this.state.sortByValue}
                 transactionsConfirmed={this.state.transactionsConfirmed}

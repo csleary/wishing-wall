@@ -63,13 +63,6 @@ const shortHash = (network, hash) => {
   );
 };
 
-const isUnconfirmed = (height, tx) => {
-  if (height && tx.meta.height === Number.MAX_SAFE_INTEGER) {
-    return true;
-  }
-  return false;
-};
-
 const TransactionList = props => {
   const transactionList = [
     ...props.transactionsUnconfirmed,
@@ -78,7 +71,7 @@ const TransactionList = props => {
   const filtered = filterTransactions(props.address, transactionList);
   const sorted = props.sortByValue ? sortTransactions(filtered) : filtered;
 
-  if (!sorted.length) {
+  if (!sorted.length && !props.isUpdating) {
     return (
       <Grid.Row>
         <Grid.Column textAlign="center" verticalAlign="middle">
@@ -97,7 +90,7 @@ const TransactionList = props => {
 
   return sorted.map((tx, index) => (
     <Grid.Row className="transaction" key={tx.meta.hash.data}>
-      {isUnconfirmed(props.height, tx) && (
+      {tx.meta.height === Number.MAX_SAFE_INTEGER && (
         <Label
           corner="right"
           color="red"
