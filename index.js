@@ -18,21 +18,21 @@ const handleEndpoints = (socket, message) => {
 
   if (address.startsWith('T')) {
     endpoint = nem.model.objects.create('endpoint')(
-      'http://23.228.67.85',
+      nem.model.nodes.defaultTestnet,
       nem.model.nodes.defaultPort
     );
     endpointSocket = nem.model.objects.create('endpoint')(
-      'http://23.228.67.85',
+      nem.model.nodes.defaultTestnet,
       nem.model.nodes.websocketPort
     );
     network = 'testnet';
   } else {
     endpoint = nem.model.objects.create('endpoint')(
-      nem.model.nodes.defaultMainnet,
+      'http://108.61.168.86',
       nem.model.nodes.defaultPort
     );
     endpointSocket = nem.model.objects.create('endpoint')(
-      nem.model.nodes.defaultMainnet,
+      'http://108.61.168.86',
       nem.model.nodes.websocketPort
     );
     network = 'mainnet';
