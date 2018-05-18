@@ -103,12 +103,12 @@ const handleIncomingTransactions = (socket, message) => {
       const currentBatch = incoming.data || [];
       total = [...total, ...currentBatch];
       if (total.length >= transactionsMax) {
-        socket.send(payload('incomingTransactions', total));
+        socket.send(payload('transactionsRecent', total));
       } else if (currentBatch.length === 25) {
         txId = currentBatch[currentBatch.length - 1].meta.id;
         fetchTransactions();
       } else {
-        socket.send(payload('incomingTransactions', total));
+        socket.send(payload('transactionsRecent', total));
       }
     } catch (error) {
       socket.send(payload('error', error));

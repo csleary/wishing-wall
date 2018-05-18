@@ -133,7 +133,7 @@ class App extends Component {
           return this.transactionsUnconfirmed(message.data);
         case 'transactionsConfirmed':
           return this.transactionsConfirmed(message.data);
-        case 'incomingTransactions':
+        case 'transactionsRecent':
           return this.transactionsRecent(message.data);
         case 'error':
           this.setState({

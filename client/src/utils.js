@@ -1,10 +1,28 @@
 import React from 'react';
 import nem from 'nem-sdk';
 
+const mosaicAmount = (amount, mosaics) => {
+  const xem = mosaics.find(el => el.mosaicId.namespaceId === 'nem' && el.mosaicId.name === 'xem');
+  if (xem) return xem.quantity * amount;
+  return 0;
+};
+
+const calculateAmount = tx => {
+  const { type } = tx.transaction;
+  if (type === 4100) {
+    const { amount, mosaics } = tx.transaction.otherTrans;
+    if (mosaics) return mosaicAmount(amount, mosaics);
+    return amount;
+  }
+  const { amount, mosaics } = tx.transaction;
+  if (mosaics) return mosaicAmount(amount, mosaics);
+  return amount;
+};
+
 const formatAmount = tx => {
   const { nemValue } = nem.utils.format;
-  const { amount, otherTrans } = tx.transaction;
-  const newAmount = amount || (otherTrans && otherTrans.amount);
+
+  const newAmount = calculateAmount(tx);
 
   if (newAmount && newAmount > 0) {
     const formatted = nemValue(newAmount);
@@ -64,18 +82,10 @@ const renderMessage = tx => {
 };
 
 const sortTransactions = transactionList => {
-  const sorted = transactionList.sort((a, b) => {
-    const checkType = tx => {
-      if (tx.transaction.type === 4100) {
-        return tx.transaction.otherTrans.amount;
-      }
-      return tx.transaction.amount;
-    };
-    return checkType(b) - checkType(a);
-  });
-
-  const unique = sorted.filter((tx, index, list) => !index || tx !== list[index - 1]);
-  return unique;
+  const sorted = transactionList.sort((a, b) => calculateAmount(b) - calculateAmount(a));
+  // const unique = sorted.filter((tx, index, list) => !index || tx !== list[index - 1]);
+  return sorted;
+  // return unique;
 };
 
 export { filterTransactions, formatAmount, renderMessage, sortTransactions };
