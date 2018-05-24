@@ -1,6 +1,9 @@
 import React from 'react';
 import { Grid, Icon, Statistic, Transition } from 'semantic-ui-react';
 
+const today = new Date();
+const year = today.getFullYear();
+
 const Footer = props => (
   <Grid.Row textAlign="center" style={{ paddingTop: '4rem' }}>
     <Grid.Column>
@@ -16,6 +19,10 @@ const Footer = props => (
           <p>{props.network.toUpperCase()}</p>
         </Statistic>
       </Transition>
+      <p>
+        &copy; {year !== 2018 && <span>2018&ndash;</span>}
+        {year} <a href="https://ochremusic.com">Christopher Leary</a>
+      </p>
       <p>
         To support continued development, donations on{' '}
         <a

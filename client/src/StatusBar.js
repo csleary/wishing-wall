@@ -23,7 +23,7 @@ const StatusBar = props => (
             <Message
               color="red"
               error
-              header="Seems we have encountered a problem."
+              header="It appears we have encountered a problem. 😕"
               list={props.errors}
             />
           )}

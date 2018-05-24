@@ -16,6 +16,10 @@ const protocol = window.location.protocol === 'http:' ? 'ws:' : 'wss:';
 const port = process.env.NODE_ENV === 'development' ? ':8082' : '';
 const socketUrl = `${protocol}//${window.location.hostname}${port}`;
 
+window.onbeforeunload = () => {
+  socket.close();
+};
+
 class App extends Component {
   state = {
     address: ADDRESS,
@@ -33,8 +37,8 @@ class App extends Component {
     showOptions: false,
     showHeader: true,
     socketConnected: false,
-    sortByValue: true,
-    transactionsMax: 100,
+    sortByValue: false,
+    transactionsMax: 10,
     transactionsRecent: [],
     transactionsUnconfirmed: [],
     valid: true
@@ -191,7 +195,7 @@ class App extends Component {
         }${showTransactionsMax}.`);
     } else {
       this.setState({ isLoading: false, isUpdating: false });
-      this.newMessage(`${new Date().toLocaleTimeString()}: No recent transactions found.`);
+      this.newMessage(`${new Date().toLocaleTimeString()}: No recent transactions found. How tragic.`);
     }
   };
 

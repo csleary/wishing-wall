@@ -28,10 +28,12 @@ const handleEndpoints = (socket, message) => {
     network = 'testnet';
   } else {
     endpoint = nem.model.objects.create('endpoint')(
+      // nem.model.nodes.defaultMainnet,
       'http://108.61.168.86',
       nem.model.nodes.defaultPort
     );
     endpointSocket = nem.model.objects.create('endpoint')(
+      // nem.model.nodes.defaultMainnet,
       'http://108.61.168.86',
       nem.model.nodes.websocketPort
     );
@@ -71,7 +73,7 @@ const handleEndpoints = (socket, message) => {
     },
     error => {
       if (socket.readyState === socket.OPEN) {
-        socket.send(payload('error', error));
+        socket.send(payload('error', `NEM node connection error: ${error}`));
       }
     }
   );
@@ -130,6 +132,8 @@ wss.on('connection', socket => {
       default:
     }
   });
+  socket.on('close', () => {});
+  socket.on('error', () => {});
 });
 
 app.use(express.static(path.resolve(__dirname, 'client', 'build')));
