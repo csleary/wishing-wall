@@ -1,9 +1,8 @@
-import nem from 'nem-sdk';
 import React from 'react';
 import { Grid, Icon, Header, Label, Popup } from 'semantic-ui-react';
 import {
   filterTransactions,
-  formatAmount,
+  calculateAmount,
   renderMessage,
   sortTransactions
 } from './utils';
@@ -89,8 +88,8 @@ const TransactionList = props => {
   sorted.length = props.transactionsMax;
 
   return sorted.map((tx, index) => (
-    <Grid.Row className="transaction" key={tx.meta.hash.data}>
-      {tx.meta.height === Number.MAX_SAFE_INTEGER && (
+    <Grid.Row className="transaction" key={tx.signature}>
+      {!tx.transactionInfo && (
         <Label
           corner="right"
           color="red"
@@ -124,12 +123,15 @@ const TransactionList = props => {
           hoverable
           inverted
           position="bottom right"
-          trigger={<Header size="small">{formatAmount(tx)} XEM</Header>}
+          trigger={<Header size="small">{calculateAmount(tx)} XEM</Header>}
         >
           <p>
-            Hash: {shortHash(props.network, tx.meta.hash.data)}
+            Hash:{' '}
+            {tx.transactionInfo
+              ? shortHash(props.network, tx.transactionInfo.hash.data)
+              : 'To be confirmed.'}
             <br />
-            Date: {nem.utils.format.nemDate(tx.transaction.timeStamp)}
+            Date: {new Date(tx.timeWindow.timeStamp).toLocaleString()}
           </p>
         </Popup>
       </Grid.Column>

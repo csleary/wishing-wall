@@ -8,7 +8,9 @@ import StatusBar from './StatusBar';
 import TransactionList from './TransactionList';
 import WishButton from './WishButton';
 
-const ADDRESS = 'TDJO3IMOI4QNYVYWWLCRQZ25W2QFRWHTLPK5WSL7';
+// const ADDRESS = 'TDJO3IMOI4QNYVYWWLCRQZ25W2QFRWHTLPK5WSL7';
+const ADDRESS = 'TCQFU2U2UR27EYLADA6FNE6KY7ONFM7YH7ZYREBS';
+// const ADDRESS = 'NC64UFOWRO6AVMWFV2BFX2NT6W2GURK2EOX6FFMZ';
 
 let copyMessageDelay = null;
 let socket;
@@ -31,6 +33,7 @@ class App extends Component {
     isUpdating: false,
     messages: [],
     network: '',
+    nodeName: '',
     showCode: false,
     showCopyMessage: false,
     showEmbedCode: false,
@@ -47,6 +50,9 @@ class App extends Component {
   componentDidMount() {
     this.handleParams().then(() => {
       this.socketConnect().then(() => {
+        socket.onclose = e => {
+          if (e.code !== 1005) this.socketReconnect();
+        };
         this.handleListeners();
         this.handleFetchRecentTransactions();
       });
@@ -54,6 +60,7 @@ class App extends Component {
   }
 
   socketReconnect = () => {
+    if (socket && socket.readyState === 1) socket.close();
     this.newMessage('Socket disconnected. Reconnecting…');
     this.socketConnect().then(() => {
       this.newMessage('Socket reconnected.');
@@ -98,7 +105,6 @@ class App extends Component {
           socket = new WebSocket(socketUrl);
         }
         if (socket && socket.readyState === 1) {
-          socket.onclose = () => this.socketReconnect();
           success();
         } else {
           setTimeout(() => checkSocket(success), 100);
@@ -111,11 +117,11 @@ class App extends Component {
         socket.addEventListener('message', event => {
           const message = JSON.parse(event.data);
           if (message.type === 'node') {
-            const { endpoint, endpointSocket, network } = message.data;
+            const { endpoint, network, nodeName } = message.data;
             this.setState({
               endpoint,
-              endpointSocket,
               network,
+              nodeName,
               socketConnected: true
             });
             resolve();
@@ -161,11 +167,11 @@ class App extends Component {
   };
 
   transactionsConfirmed = tx => {
-    const hash = tx.meta.hash.data;
+    const hash = tx.transactionInfo.hash.data;
     const shortHash = `${hash.substring(0, 3)}…${hash.substring(hash.length - 3)}`;
     this.setState({
       transactionsUnconfirmed: [
-        ...this.state.transactionsUnconfirmed.filter(el => el.meta.hash.data !== tx.meta.hash.data)
+        ...this.state.transactionsUnconfirmed.filter(el => el.signature !== tx.signature)
       ],
       transactionsRecent: [
         tx,
@@ -200,11 +206,10 @@ class App extends Component {
   };
 
   handleFetchRecentTransactions = () => {
-    const { endpoint, address, transactionsMax } = this.state;
+    const { address, transactionsMax } = this.state;
     this.newMessage(`${new Date().toLocaleTimeString()}: Fetching recent transactions…`);
 
     socket.send(this.payload('fetchIncomingTransactions', {
-        endpoint,
         address,
         transactionsMax
       }));
@@ -281,16 +286,7 @@ class App extends Component {
       this.setState({
         isUpdating: true
       });
-      this.socketConnect()
-        .then(() => {
-          this.handleFetchRecentTransactions();
-        })
-        .catch(err => {
-          this.setState({
-            errors: [...this.state.errors, err],
-            isUpdating: false
-          });
-        });
+      this.socketReconnect();
     }
   };
 
@@ -300,7 +296,8 @@ class App extends Component {
         <StatusBar
           errors={this.state.errors}
           messages={this.state.messages}
-          endpointSocket={this.state.endpointSocket}
+          endpoint={this.state.endpoint}
+          nodeName={this.state.nodeName}
           socketConnected={this.state.socketConnected}
           transactionsMax={this.state.transactionsMax}
         />
@@ -340,7 +337,6 @@ class App extends Component {
                 isUpdating={this.state.isUpdating}
                 network={this.state.network}
                 sortByValue={this.state.sortByValue}
-                transactionsConfirmed={this.state.transactionsConfirmed}
                 transactionsUnconfirmed={this.state.transactionsUnconfirmed}
                 transactionsMax={this.state.transactionsMax}
                 transactionsRecent={this.state.transactionsRecent}

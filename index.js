@@ -1,122 +1,122 @@
 const express = require('express');
 const http = require('http');
-const nem = require('nem-sdk').default;
+const {
+  AccountHttp,
+  Address,
+  BlockchainListener,
+  ChainHttp,
+  ConfirmedTransactionListener,
+  NEMLibrary,
+  NodeHttp,
+  NetworkTypes,
+  UnconfirmedTransactionListener
+} = require('nem-library');
 const path = require('path');
 const WebSocket = require('ws');
 
 const app = express();
 const server = http.createServer(app);
-const wss = new WebSocket.Server({ server, clientTracking: true });
+const wss = new WebSocket.Server({ server });
+
+const NODE_MAINNET = '165.227.217.87';
+const NODE_TESTNET = '104.128.226.60';
 
 const payload = (type, data) => JSON.stringify({ type, data });
 
 const handleEndpoints = (socket, message) => {
-  let endpoint;
-  let endpointSocket;
+  NEMLibrary.reset();
   let network;
+  let nodeHttp;
   const address = message.data;
 
   if (address.startsWith('T')) {
-    endpoint = nem.model.objects.create('endpoint')(
-      nem.model.nodes.defaultTestnet,
-      nem.model.nodes.defaultPort
-    );
-    endpointSocket = nem.model.objects.create('endpoint')(
-      nem.model.nodes.defaultTestnet,
-      nem.model.nodes.websocketPort
-    );
+    NEMLibrary.bootstrap(NetworkTypes.TEST_NET);
+    nodeHttp = new NodeHttp([
+      { protocol: 'http', domain: NODE_TESTNET, port: 7890 }
+    ]);
     network = 'testnet';
   } else {
-    endpoint = nem.model.objects.create('endpoint')(
-      // nem.model.nodes.defaultMainnet,
-      'http://108.61.168.86',
-      nem.model.nodes.defaultPort
-    );
-    endpointSocket = nem.model.objects.create('endpoint')(
-      // nem.model.nodes.defaultMainnet,
-      'http://108.61.168.86',
-      nem.model.nodes.websocketPort
-    );
+    NEMLibrary.bootstrap(NetworkTypes.MAIN_NET);
+    nodeHttp = new NodeHttp([
+      { protocol: 'http', domain: NODE_MAINNET, port: 7890 }
+    ]);
     network = 'mainnet';
   }
 
-  const connector = nem.com.websockets.connector.create(
-    endpointSocket,
-    address
-  );
+  nodeHttp.getNodeInfo().subscribe(node => {
+    socket.send(payload('node', {
+        endpoint: node.endpoint,
+        network,
+        nodeName: node.identity.name
+      }));
+  });
 
-  connector.connect().then(
-    () => {
-      nem.com.websockets.subscribe.chain.height(connector, res => {
-        if (socket.readyState === socket.OPEN) {
-          socket.send(payload('height', res.height));
-        }
-      });
-
-      nem.com.websockets.subscribe.account.transactions.unconfirmed(
-        connector,
-        res => {
-          if (socket.readyState === socket.OPEN) {
-            socket.send(payload('transactionsUnconfirmed', res));
-          }
-        }
-      );
-
-      nem.com.websockets.subscribe.account.transactions.confirmed(
-        connector,
-        res => {
-          if (socket.readyState === socket.OPEN) {
-            socket.send(payload('transactionsConfirmed', res));
-          }
-        }
-      );
+  const blockHeight = new BlockchainListener().newHeight();
+  blockHeight.subscribe(
+    height => {
+      socket.send(payload('height', height));
     },
     error => {
-      if (socket.readyState === socket.OPEN) {
-        socket.send(payload('error', `NEM node connection error: ${error}`));
-      }
+      socket.send(payload('error', `NEM node connection error: ${error}`));
     }
   );
-  socket.send(payload('node', {
-      endpoint,
-      endpointSocket,
-      network
-    }));
+
+  const preparedAddress = new Address(address);
+  const unconfirmed = new UnconfirmedTransactionListener().given(preparedAddress);
+  unconfirmed.subscribe(
+    res => {
+      socket.send(payload('transactionsUnconfirmed', res));
+    },
+    error => {
+      socket.send(payload('error', `NEM node connection error: ${error}`));
+    }
+  );
+
+  const confirmed = new ConfirmedTransactionListener().given(preparedAddress);
+  confirmed.subscribe(
+    res => {
+      socket.send(payload('transactionsConfirmed', res));
+    },
+    error => {
+      socket.send(payload('error', `NEM node connection error: ${error}`));
+    }
+  );
 };
 
 const handleIncomingTransactions = (socket, message) => {
-  const { endpoint, address, transactionsMax } = message.data;
+  const { address, transactionsMax } = message.data;
+  let accountHttp;
+  if (address.startsWith('T')) {
+    accountHttp = new AccountHttp([
+      { protocol: 'http', domain: NODE_TESTNET, port: 7890 }
+    ]);
+  } else {
+    accountHttp = new AccountHttp([
+      { protocol: 'http', domain: NODE_MAINNET, port: 7890 }
+    ]);
+  }
 
-  nem.com.requests.chain.height(endpoint).then(res => {
-    socket.send(payload('height', res.height));
+  const chainHttp = new ChainHttp();
+  chainHttp.getBlockchainHeight().subscribe(height => {
+    socket.send(payload('height', height));
   });
 
-  let txId;
-  let total = [];
-  const fetchTransactions = async () => {
-    try {
-      const incoming = await nem.com.requests.account.transactions.incoming(
-        endpoint,
-        address,
-        null,
-        txId
-      );
+  const preparedAddress = new Address(address);
 
-      const currentBatch = incoming.data || [];
-      total = [...total, ...currentBatch];
-      if (total.length >= transactionsMax) {
-        socket.send(payload('transactionsRecent', total));
-      } else if (currentBatch.length === 25) {
-        txId = currentBatch[currentBatch.length - 1].meta.id;
-        fetchTransactions();
-      } else {
-        socket.send(payload('transactionsRecent', total));
-      }
-    } catch (error) {
-      socket.send(payload('error', error));
+  const pageSize = 100;
+  const recent = accountHttp.incomingTransactionsPaginated(preparedAddress, {
+    pageSize
+  });
+
+  let total = [];
+  recent.subscribe(incoming => {
+    total = [...total, ...incoming];
+    if (incoming.length && total.length < transactionsMax) {
+      recent.nextPage();
+    } else {
+      socket.send(payload('transactionsRecent', total));
     }
-  };
-  fetchTransactions();
+  });
 };
 
 wss.on('connection', socket => {
