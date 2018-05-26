@@ -8,9 +8,7 @@ import StatusBar from './StatusBar';
 import TransactionList from './TransactionList';
 import WishButton from './WishButton';
 
-// const ADDRESS = 'TDJO3IMOI4QNYVYWWLCRQZ25W2QFRWHTLPK5WSL7';
-const ADDRESS = 'TCQFU2U2UR27EYLADA6FNE6KY7ONFM7YH7ZYREBS';
-// const ADDRESS = 'NC64UFOWRO6AVMWFV2BFX2NT6W2GURK2EOX6FFMZ';
+const ADDRESS = 'TDJO3IMOI4QNYVYWWLCRQZ25W2QFRWHTLPK5WSL7';
 
 let copyMessageDelay = null;
 let socket;
