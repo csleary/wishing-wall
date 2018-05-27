@@ -14,12 +14,11 @@ const {
 const path = require('path');
 const WebSocket = require('ws');
 
+const NODE_MAINNET = '199.217.118.114';
+const NODE_TESTNET = '104.128.226.60';
 const app = express();
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
-
-const NODE_MAINNET = '165.227.217.87';
-const NODE_TESTNET = '104.128.226.60';
 
 const payload = (type, data) => JSON.stringify({ type, data });
 
@@ -84,9 +83,10 @@ const handleEndpoints = (socket, message) => {
 };
 
 const handleIncomingTransactions = (socket, message) => {
-  const { address, transactionsMax } = message.data;
+  const { address, network, transactionsMax } = message.data;
+
   let accountHttp;
-  if (address.startsWith('T')) {
+  if (network === 'testnet') {
     accountHttp = new AccountHttp([
       { protocol: 'http', domain: NODE_TESTNET, port: 7890 }
     ]);
@@ -102,7 +102,6 @@ const handleIncomingTransactions = (socket, message) => {
   });
 
   const preparedAddress = new Address(address);
-
   const pageSize = 100;
   const recent = accountHttp.incomingTransactionsPaginated(preparedAddress, {
     pageSize
@@ -111,7 +110,7 @@ const handleIncomingTransactions = (socket, message) => {
   let total = [];
   recent.subscribe(incoming => {
     total = [...total, ...incoming];
-    if (incoming.length && total.length < transactionsMax) {
+    if (total.length < transactionsMax && incoming.length === pageSize) {
       recent.nextPage();
     } else {
       socket.send(payload('transactionsRecent', total));

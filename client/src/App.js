@@ -158,7 +158,7 @@ class App extends Component {
     this.setState({
       transactionsUnconfirmed: [
         tx,
-        ...this.state.transactionsUnconfirmed.filter(el => el !== tx)
+        ...this.state.transactionsUnconfirmed.filter(el => el.signature !== tx.signature)
       ]
     });
     this.newMessage(`${new Date().toLocaleTimeString()}: Received unconfirmed transaction…`);
@@ -173,7 +173,7 @@ class App extends Component {
       ],
       transactionsRecent: [
         tx,
-        ...this.state.transactionsRecent.filter(el => el !== tx)
+        ...this.state.transactionsRecent.filter(el => el.signature !== tx.signature)
       ]
     });
     this.newMessage(`${new Date().toLocaleTimeString()}: Transaction ${shortHash} confirmed!`);
@@ -204,11 +204,12 @@ class App extends Component {
   };
 
   handleFetchRecentTransactions = () => {
-    const { address, transactionsMax } = this.state;
+    const { address, network, transactionsMax } = this.state;
     this.newMessage(`${new Date().toLocaleTimeString()}: Fetching recent transactions…`);
 
     socket.send(this.payload('fetchIncomingTransactions', {
         address,
+        network,
         transactionsMax
       }));
   };
