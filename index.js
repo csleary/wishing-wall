@@ -108,14 +108,22 @@ const handleIncomingTransactions = (socket, message) => {
   });
 
   let total = [];
-  recent.subscribe(incoming => {
-    total = [...total, ...incoming];
-    if (total.length < transactionsMax && incoming.length === pageSize) {
-      recent.nextPage();
-    } else {
+  recent.subscribe(
+    incoming => {
+      total = [...total, ...incoming];
+      if (total.length < transactionsMax && incoming.length === pageSize) {
+        recent.nextPage();
+      } else {
+        recent.complete();
+      }
+    },
+    error => {
+      socket.send(payload('error', `NEM node connection error: ${error}`));
+    },
+    () => {
       socket.send(payload('transactionsRecent', total));
     }
-  });
+  );
 };
 
 wss.on('connection', socket => {

@@ -36,12 +36,12 @@ const filterTransactions = (address, transactionList) =>
 
 const renderMessage = tx => {
   const { message, otherTransaction } = tx;
-  const newMessage = message || (otherTransaction && otherTransaction.message);
-  const msg = nem.utils.format.hexMessage({
-    payload: newMessage.payload,
+  const data = message || (otherTransaction && otherTransaction.message);
+  const decoded = nem.utils.format.hexMessage({
+    payload: data.payload,
     type: 1
   });
-  if (!msg) {
+  if (!decoded) {
     return (
       <span
         aria-label="No message included!"
@@ -52,7 +52,7 @@ const renderMessage = tx => {
       </span>
     );
   }
-  return msg;
+  return decoded;
 };
 
 const sortTransactions = transactionList => {
