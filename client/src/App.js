@@ -51,8 +51,7 @@ class App extends Component {
         socket.onclose = e => {
           if (e.code !== 1005) this.socketReconnect();
         };
-        this.handleListeners();
-        this.handleFetchRecentTransactions();
+        this.handleListeners().then(this.handleFetchRecentTransactions());
       });
     });
   }
@@ -62,8 +61,7 @@ class App extends Component {
     this.newMessage('Socket disconnected. Reconnecting…');
     this.socketConnect().then(() => {
       this.newMessage('Socket reconnected.');
-      this.handleListeners();
-      this.handleFetchRecentTransactions();
+      this.handleListeners().then(this.handleFetchRecentTransactions());
     });
   };
 
@@ -128,40 +126,51 @@ class App extends Component {
       });
     });
 
-  handleListeners = () => {
-    socket.addEventListener('message', event => {
-      const message = JSON.parse(event.data);
-      switch (message.type) {
-        case 'height':
-          this.setState({
-            height: message.data
-          });
-          break;
-        case 'transactionsUnconfirmed':
-          return this.transactionsUnconfirmed(message.data);
-        case 'transactionsConfirmed':
-          return this.transactionsConfirmed(message.data);
-        case 'transactionsRecent':
-          return this.transactionsRecent(message.data);
-        case 'error':
-          this.setState({
-            errors: [...this.state.errors, message.data]
-          });
-          break;
-        default:
-          break;
-      }
+  handleListeners = () =>
+    new Promise(resolve => {
+      socket.addEventListener('message', event => {
+        const message = JSON.parse(event.data);
+        switch (message.type) {
+          case 'height':
+            this.setState({
+              height: message.data
+            });
+            break;
+          case 'transactionsUnconfirmed':
+            return this.transactionsUnconfirmed(message.data);
+          case 'transactionsConfirmed':
+            return this.transactionsConfirmed(message.data);
+          case 'transactionsRecent':
+            return this.transactionsRecent(message.data);
+          case 'error':
+            this.setState({
+              errors: [...this.state.errors, message.data]
+            });
+            break;
+          default:
+            break;
+        }
+        resolve();
+      });
     });
-  };
 
   transactionsUnconfirmed = tx => {
-    this.setState({
-      transactionsUnconfirmed: [
-        tx,
-        ...this.state.transactionsUnconfirmed.filter(el => el.signature !== tx.signature)
-      ]
-    });
-    this.newMessage(`${new Date().toLocaleTimeString()}: Received unconfirmed transaction…`);
+    if (Array.isArray(tx)) {
+      this.setState({
+        transactionsUnconfirmed: [...tx]
+      });
+      this.newMessage(`${new Date().toLocaleTimeString()}: Received unconfirmed transaction${
+          tx.length > 1 ? 's' : ''
+        }…`);
+    } else {
+      this.setState({
+        transactionsUnconfirmed: [
+          tx,
+          ...this.state.transactionsUnconfirmed.filter(el => el.signature !== tx.signature)
+        ]
+      });
+      this.newMessage(`${new Date().toLocaleTimeString()}: Received unconfirmed transaction…`);
+    }
   };
 
   transactionsConfirmed = tx => {
@@ -302,6 +311,7 @@ class App extends Component {
             handleOptionsClick={this.handleOptionsClick}
             handleWishClick={this.handleWishClick}
             handleCopyTimeout={this.handleCopyTimeout}
+            network={this.state.network}
             showCode={this.state.showCode}
             showCopyMessage={this.state.showCopyMessage}
             showOptions={this.state.showOptions}

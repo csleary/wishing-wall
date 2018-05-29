@@ -66,6 +66,8 @@ body {
 
 .ui.small.header {
   color: #47a3d1;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .nem-address {

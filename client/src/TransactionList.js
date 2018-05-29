@@ -110,7 +110,14 @@ const TransactionList = props => {
           hoverable
           inverted
           position="bottom right"
-          trigger={<Header size="small">{calculateAmount(tx)} XEM</Header>}
+          trigger={
+            <Header size="small">
+              {!tx.transactionInfo
+                ? calculateAmount(tx) / 1000000
+                : calculateAmount(tx)}{' '}
+              XEM
+            </Header>
+          }
         >
           <p>
             Hash:{' '}

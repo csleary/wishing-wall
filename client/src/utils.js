@@ -3,7 +3,7 @@ import nem from 'nem-sdk';
 
 const mosaicAmount = (amount, mosaics) => {
   const xem = mosaics.find(x => x.mosaicId.namespaceId === 'nem' && x.mosaicId.name === 'xem');
-  if (xem) return xem.quantity * 10 ** -6 * amount;
+  if (xem) return xem.quantity / 1000000 * amount;
   return 0;
 };
 

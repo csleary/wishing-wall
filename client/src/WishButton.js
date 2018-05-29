@@ -71,7 +71,7 @@ const WishButton = props => (
         <Grid.Column>
           <p>
             Please send messages to this
-            {props.address.startsWith('T') ? <em> testnet </em> : ' '}
+            {props.network === 'testnet' ? <em> testnet </em> : ' '}
             address to display them below (click to copy):
           </p>
           <div
