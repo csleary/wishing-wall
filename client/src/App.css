@@ -23,7 +23,37 @@ body {
 }
 
 .ui.grid .row.transaction {
+  padding: 0;
+}
+
+.ui.grid .row.transaction .column.message-icon {
   padding: 2rem;
+}
+
+.ui.grid .row.transaction .column.message-icon .top-message {
+  background-color: #ff9f1a;
+  box-shadow: none;
+  color: #fff;
+}
+
+.ui.grid .row.transaction .column.message-icon .most-recent-message {
+  color: #d2c3ac;
+  font-size: 3rem;
+  margin: 0 0 0 -0.25rem;
+}
+
+.ui.grid .row.transaction .column.message-icon .standard-message {
+  color: #d2c3ac;
+  margin-left: 0.5rem;
+  margin-right: 0;
+}
+
+.ui.grid .row.transaction .column.message-body {
+  padding: 2rem;
+}
+
+.ui.grid .row.transaction .column.message-value {
+  padding: 0.75rem 1rem;
 }
 
 .row.transaction:nth-child(odd) {
@@ -63,5 +93,20 @@ body {
 @media only screen and (max-width: 767px) {
   .ui .form .fields .field {
     margin-bottom: 1rem;
+  }
+
+  .ui.container > .ui.stackable.grid > .column,
+  .ui.container > .ui.stackable.grid > .row > .column {
+    padding: 0.5rem 0.75rem !important;
+  }
+
+  .ui.container > .ui.stackable.grid > .row > .column.message-icon {
+    padding: 0.5rem !important;
+  }
+
+  .ui.grid .row.transaction .column.message-icon .top-message,
+  .ui.grid .row.transaction .column.message-icon .most-recent-message,
+  .ui.grid .row.transaction .column.message-icon .standard-message {
+    margin: 0;
   }
 }

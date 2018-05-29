@@ -12,40 +12,38 @@ const renderIcon = (sortByValue, index) => {
     return (
       <Icon
         circular
+        className="top-message"
         fitted
         name="trophy"
         size="large"
-        style={{
-          backgroundColor: '#ff9f1a',
-          boxShadow: 'none',
-          color: '#fff'
-        }}
         title="Top message!"
       />
     );
   } else if (index === 0 && !sortByValue) {
     return (
       <Icon
+        className="most-recent-message"
         name="clock"
         size="big"
-        style={{
-          color: '#d2c3ac',
-          fontSize: '3rem',
-          margin: '0 0 0 -.25rem'
-        }}
+        // style={{
+        //   color: '#d2c3ac',
+        //   fontSize: '3rem',
+        //   margin: '0 0 0 -.25rem'
+        // }}
         title="Most recent message."
       />
     );
   }
   return (
     <Icon
+      className="standard-message"
       name="comment"
       size="large"
-      style={{
-        color: '#d2c3ac',
-        marginLeft: '0.5rem',
-        marginRight: 0
-      }}
+      // style={{
+      //   color: '#d2c3ac',
+      //   marginLeft: '0.5rem',
+      //   marginRight: 0
+      // }}
     />
   );
 };
@@ -98,14 +96,19 @@ const TransactionList = props => {
         />
       )}
       <Grid.Column
-        style={{ padding: 0 }}
+        className="message-icon"
         textAlign="left"
         width={2}
         verticalAlign="top"
       >
         {renderIcon(props.sortByValue, index)}
       </Grid.Column>
-      <Grid.Column textAlign="center" verticalAlign="middle" width={12}>
+      <Grid.Column
+        className="message-body"
+        textAlign="center"
+        verticalAlign="middle"
+        width={12}
+      >
         <Header
           size={index === 0 ? 'large' : 'medium'}
           style={{ wordBreak: 'break-word' }}
@@ -114,7 +117,7 @@ const TransactionList = props => {
         </Header>
       </Grid.Column>
       <Grid.Column
-        style={{ padding: 0 }}
+        className="message-value"
         textAlign="right"
         width={2}
         verticalAlign="bottom"
@@ -123,7 +126,14 @@ const TransactionList = props => {
           hoverable
           inverted
           position="bottom right"
-          trigger={<Header size="small">{calculateAmount(tx)} XEM</Header>}
+          trigger={
+            <Header size="small">
+              {!tx.transactionInfo
+                ? calculateAmount(tx) * 10 ** -6 // Patch unconfirmed microxem bug.
+                : calculateAmount(tx)}{' '}
+              XEM
+            </Header>
+          }
         >
           <p>
             Hash:{' '}
