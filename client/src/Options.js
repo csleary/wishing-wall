@@ -43,7 +43,7 @@ const Options = props => (
             <a
               href={`?address=${props.address}&sortByValue=${
                 props.sortByValue
-              }&max=${props.transactionsMax}`}
+              }&max=${props.transactionsMax ? props.transactionsMax : 10}`}
             >
               <Icon
                 circular
@@ -79,7 +79,7 @@ const Options = props => (
                 }?address=${props.address}&sortByValue=${
                   props.sortByValue
                 }&max=${
-                  props.transactionsMax
+                  props.transactionsMax ? props.transactionsMax : 10
                 }" height="500px" width="100%"></iframe>`}
                 width={16}
               />

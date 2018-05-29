@@ -25,27 +25,11 @@ const renderIcon = (sortByValue, index) => {
         className="most-recent-message"
         name="clock"
         size="big"
-        // style={{
-        //   color: '#d2c3ac',
-        //   fontSize: '3rem',
-        //   margin: '0 0 0 -.25rem'
-        // }}
         title="Most recent message."
       />
     );
   }
-  return (
-    <Icon
-      className="standard-message"
-      name="comment"
-      size="large"
-      // style={{
-      //   color: '#d2c3ac',
-      //   marginLeft: '0.5rem',
-      //   marginRight: 0
-      // }}
-    />
-  );
+  return <Icon className="standard-message" name="comment" size="large" />;
 };
 
 const shortHash = (network, hash) => {
@@ -83,7 +67,7 @@ const TransactionList = props => {
     );
   }
 
-  sorted.length = props.transactionsMax;
+  sorted.length = props.transactionsMax ? props.transactionsMax : 0;
 
   return sorted.map((tx, index) => (
     <Grid.Row className="transaction" key={tx.signature}>
@@ -126,14 +110,7 @@ const TransactionList = props => {
           hoverable
           inverted
           position="bottom right"
-          trigger={
-            <Header size="small">
-              {!tx.transactionInfo
-                ? calculateAmount(tx) * 10 ** -6 // Patch unconfirmed microxem bug.
-                : calculateAmount(tx)}{' '}
-              XEM
-            </Header>
-          }
+          trigger={<Header size="small">{calculateAmount(tx)} XEM</Header>}
         >
           <p>
             Hash:{' '}

@@ -72,7 +72,7 @@ const WishButton = props => (
           <p>
             Please send messages to this
             {props.address.startsWith('T') ? <em> testnet </em> : ' '}
-            address:
+            address to display them below (click to copy):
           </p>
           <div
             className="nem-address"
@@ -95,11 +95,9 @@ const WishButton = props => (
             </p>
           </Transition>
           <p>
-            Your messages will appear as soon as they&rsquo;ve been confirmed.
-          </p>
-          <p>
-            Both multisig and normal transfer transactions are supported (not
-            encrypted).
+            Both normal and multisignature transactions will be displayed.
+            Remember to <strong>not</strong> encrypt your message (unless of
+            course, you wish for it to remain private).
           </p>
         </Grid.Column>
       </Grid.Row>

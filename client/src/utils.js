@@ -36,7 +36,7 @@ const renderMessage = tx => {
   const { message, otherTransaction } = tx;
   const data = message || (otherTransaction && otherTransaction.message);
 
-  if (!data) {
+  if (!data || !data.payload.length) {
     return (
       <span
         aria-label="No message included!"

@@ -259,11 +259,7 @@ class App extends Component {
         this.setState({ [name]: !this.state.sortByValue });
         break;
       case 'transactionsMax':
-        if (value) {
-          this.setState({ [name]: parseInt(value, 10) });
-        } else {
-          this.setState({ [name]: 0 });
-        }
+        this.setState({ [name]: parseInt(value, 10) });
         break;
       default:
         break;
@@ -298,7 +294,6 @@ class App extends Component {
           endpoint={this.state.endpoint}
           nodeName={this.state.nodeName}
           socketConnected={this.state.socketConnected}
-          transactionsMax={this.state.transactionsMax}
         />
         <Container>
           {this.state.showHeader && <Header />}
