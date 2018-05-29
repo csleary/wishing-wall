@@ -2,7 +2,7 @@ import React from 'react';
 import nem from 'nem-sdk';
 
 const mosaicAmount = (amount, mosaics) => {
-  const xem = mosaics.find(el => el.mosaicId.namespaceId === 'nem' && el.mosaicId.name === 'xem');
+  const xem = mosaics.find(x => x.mosaicId.namespaceId === 'nem' && x.mosaicId.name === 'xem');
   if (xem) return xem.quantity * 10 ** -6 * amount;
   return 0;
 };
@@ -11,11 +11,11 @@ const calculateAmount = tx => {
   const { type } = tx;
   if (type === 4100) {
     const { _xem, _mosaics } = tx.otherTransaction;
-    if (_mosaics) return mosaicAmount(_xem.amount, _mosaics);
+    if (_mosaics && _mosaics.length) return mosaicAmount(_xem.amount, _mosaics);
     return _xem.amount;
   }
   const { _xem, _mosaics } = tx;
-  if (_mosaics) return mosaicAmount(_xem.amount, _mosaics);
+  if (_mosaics && _mosaics.length) return mosaicAmount(_xem.amount, _mosaics);
   return _xem.amount;
 };
 
@@ -35,18 +35,8 @@ const filterTransactions = (address, transactionList) =>
 const renderMessage = tx => {
   const { message, otherTransaction } = tx;
   const data = message || (otherTransaction && otherTransaction.message);
-  if (data && data.encrypted) {
-    return (
-      <span aria-label="Message encrypted" role="img" title="Message encrypted">
-        🤐
-      </span>
-    );
-  }
-  const decoded = nem.utils.format.hexMessage({
-    payload: data.payload,
-    type: 1
-  });
-  if (!decoded) {
+
+  if (!data) {
     return (
       <span
         aria-label="No message included!"
@@ -57,7 +47,19 @@ const renderMessage = tx => {
       </span>
     );
   }
-  return decoded;
+
+  if (data && data.encrypted) {
+    return (
+      <span aria-label="Message encrypted" role="img" title="Message encrypted">
+        🤐
+      </span>
+    );
+  }
+
+  return nem.utils.format.hexMessage({
+    payload: data.payload,
+    type: 1
+  });
 };
 
 const sortTransactions = transactionList => {
