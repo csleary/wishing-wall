@@ -22,6 +22,14 @@ const wss = new WebSocket.Server({ server });
 
 const payload = (type, data) => JSON.stringify({ type, data });
 
+const isEncrypted = tx => {
+  const { message, otherTransaction } = tx;
+  const data = message || (otherTransaction && otherTransaction.message);
+  if (data && data.constructor.name === 'EncryptedMessage') {
+    data.encrypted = true;
+  }
+};
+
 const handleEndpoints = (socket, message) => {
   NEMLibrary.reset();
   let network;
@@ -110,6 +118,9 @@ const handleIncomingTransactions = (socket, message) => {
   let total = [];
   recent.subscribe(
     incoming => {
+      incoming.forEach(tx => {
+        isEncrypted(tx);
+      });
       total = [...total, ...incoming];
       if (total.length < transactionsMax && incoming.length === pageSize) {
         recent.nextPage();

@@ -21,9 +21,7 @@ const calculateAmount = tx => {
 
 const filterTransactions = (address, transactionList) =>
   transactionList.filter(tx => {
-    if (tx.type === 257 && tx.recipient.value === address) {
-      return true;
-    }
+    if (tx.type === 257 && tx.recipient.value === address) return true;
     if (
       tx.type === 4100 &&
       tx.otherTransaction.type === 257 &&
@@ -37,6 +35,13 @@ const filterTransactions = (address, transactionList) =>
 const renderMessage = tx => {
   const { message, otherTransaction } = tx;
   const data = message || (otherTransaction && otherTransaction.message);
+  if (data && data.encrypted) {
+    return (
+      <span aria-label="Message encrypted" role="img" title="Message encrypted">
+        🤐
+      </span>
+    );
+  }
   const decoded = nem.utils.format.hexMessage({
     payload: data.payload,
     type: 1
