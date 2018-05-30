@@ -45,14 +45,14 @@ class App extends Component {
     valid: true
   };
 
-  componentDidMount() {
-    this.handleParams().then(() => {
-      this.socketConnect().then(() => {
-        socket.onclose = e => {
-          if (e.code !== 1005) this.socketReconnect();
-        };
-        this.handleListeners().then(this.handleFetchRecentTransactions());
-      });
+  async componentDidMount() {
+    this.handleParams();
+    this.socketConnect().then(() => {
+      this.handleListeners();
+      socket.onclose = e => {
+        if (e.code !== 1005) this.socketReconnect();
+      };
+      this.handleFetchRecentTransactions();
     });
   }
 
@@ -61,36 +61,35 @@ class App extends Component {
     this.newMessage('Socket disconnected. Reconnecting…');
     this.socketConnect().then(() => {
       this.newMessage('Socket reconnected.');
-      this.handleListeners().then(this.handleFetchRecentTransactions());
+      this.handleListeners();
+      this.handleFetchRecentTransactions();
     });
   };
 
-  handleParams = () =>
-    new Promise(resolve => {
-      const options = ['address', 'max', 'showHeader', 'sortByValue'];
-      const queries = window.location.search.length
-        ? window.location.search.substring(1).split('&')
-        : [];
-      queries.forEach(query => {
-        const pair = query.split('=');
-        const key = pair[0];
-        const value = pair[1];
-        if (!options.includes(key)) {
-          return;
-        }
-        if (value === 'true' || value === 'false') {
-          pair[1] = value === 'true';
-        }
-        if (parseInt(value, 10)) {
-          pair[1] = parseInt(value, 10);
-        }
-        if (key === 'max') {
-          pair[0] = 'transactionsMax';
-        }
-        this.setState({ [pair[0]]: pair[1] });
-      });
-      resolve();
+  handleParams = () => {
+    const options = ['address', 'max', 'showHeader', 'sortByValue'];
+    const queries = window.location.search.length
+      ? window.location.search.substring(1).split('&')
+      : [];
+    queries.forEach(query => {
+      const pair = query.split('=');
+      const key = pair[0];
+      const value = pair[1];
+      if (!options.includes(key)) {
+        return;
+      }
+      if (value === 'true' || value === 'false') {
+        pair[1] = value === 'true';
+      }
+      if (parseInt(value, 10)) {
+        pair[1] = parseInt(value, 10);
+      }
+      if (key === 'max') {
+        pair[0] = 'transactionsMax';
+      }
+      this.setState({ [pair[0]]: pair[1] });
     });
+  };
 
   payload = (type, data) => JSON.stringify({ type, data });
 
@@ -126,38 +125,36 @@ class App extends Component {
       });
     });
 
-  handleListeners = () =>
-    new Promise(resolve => {
-      socket.addEventListener('message', event => {
-        const message = JSON.parse(event.data);
-        switch (message.type) {
-          case 'height':
-            this.setState({
-              height: message.data
-            });
-            break;
-          case 'transactionsUnconfirmed':
-            return this.transactionsUnconfirmed(message.data);
-          case 'transactionsConfirmed':
-            return this.transactionsConfirmed(message.data);
-          case 'transactionsRecent':
-            return this.transactionsRecent(message.data);
-          case 'error':
-            this.setState({
-              errors: [...this.state.errors, message.data]
-            });
-            break;
-          default:
-            break;
-        }
-        resolve();
-      });
+  handleListeners = () => {
+    socket.addEventListener('message', event => {
+      const message = JSON.parse(event.data);
+      switch (message.type) {
+        case 'height':
+          this.setState({
+            height: message.data
+          });
+          break;
+        case 'transactionsUnconfirmed':
+          return this.transactionsUnconfirmed(message.data);
+        case 'transactionsConfirmed':
+          return this.transactionsConfirmed(message.data);
+        case 'transactionsRecent':
+          return this.transactionsRecent(message.data);
+        case 'error':
+          this.setState({
+            errors: [...this.state.errors, message.data]
+          });
+          break;
+        default:
+          break;
+      }
     });
+  };
 
   transactionsUnconfirmed = tx => {
     if (Array.isArray(tx)) {
       this.setState({
-        transactionsUnconfirmed: [...tx]
+        transactionsUnconfirmed: tx
       });
       this.newMessage(`${new Date().toLocaleTimeString()}: Received unconfirmed transaction${
           tx.length > 1 ? 's' : ''

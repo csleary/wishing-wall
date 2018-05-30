@@ -112,7 +112,7 @@ const handleIncomingTransactions = (socket, message) => {
   const preparedAddress = new Address(address);
 
   accountHttp.unconfirmedTransactions(preparedAddress).subscribe(res => {
-    if (res.length) socket.send(payload('transactionsUnconfirmed', res));
+    socket.send(payload('transactionsUnconfirmed', res));
   });
 
   const pageSize = 100;

@@ -112,7 +112,7 @@ const TransactionList = props => {
           position="bottom right"
           trigger={
             <Header size="small">
-              {!tx.transactionInfo
+              {!tx.transactionInfo && tx.type === 247
                 ? calculateAmount(tx) / 1000000
                 : calculateAmount(tx)}{' '}
               XEM
