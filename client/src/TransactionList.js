@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Fragment } from 'react';
 import { Grid, Icon, Header, Label, Popup } from 'semantic-ui-react';
 import {
   filterTransactions,
@@ -6,6 +6,12 @@ import {
   renderMessage,
   sortTransactions
 } from './utils';
+
+const renderDate = timestamp => {
+  const date = new Date(timestamp);
+  const offset = date.getTimezoneOffset() * 60 * 1000;
+  return new Date(date - offset).toUTCString();
+};
 
 const renderIcon = (sortByValue, index) => {
   if (index === 0 && sortByValue) {
@@ -82,7 +88,7 @@ const TransactionList = props => {
       <Grid.Column
         className="message-icon"
         textAlign="left"
-        width={2}
+        width={3}
         verticalAlign="top"
       >
         {renderIcon(props.sortByValue, index)}
@@ -91,7 +97,7 @@ const TransactionList = props => {
         className="message-body"
         textAlign="center"
         verticalAlign="middle"
-        width={12}
+        width={10}
       >
         <Header
           size={index === 0 ? 'large' : 'medium'}
@@ -103,10 +109,11 @@ const TransactionList = props => {
       <Grid.Column
         className="message-value"
         textAlign="right"
-        width={2}
+        width={3}
         verticalAlign="bottom"
       >
         <Popup
+          flowing
           hoverable
           inverted
           position="bottom right"
@@ -120,12 +127,20 @@ const TransactionList = props => {
           }
         >
           <p>
-            Hash:{' '}
+            <Icon name="hashtag" />
             {tx.transactionInfo
               ? shortHash(props.network, tx.transactionInfo.hash.data)
-              : 'To be confirmed.'}
+              : 'To be confirmed…'}
             <br />
-            Date: {new Date(tx.timeWindow.timeStamp).toLocaleString()}
+            <Icon name="time" /> {renderDate(tx.timeWindow.timeStamp)}
+            <br />
+            {tx.type === 4100 ? (
+              <Fragment>
+                <Icon name="users" title="Multisig" />
+              </Fragment>
+            ) : (
+              ''
+            )}
           </p>
         </Popup>
       </Grid.Column>

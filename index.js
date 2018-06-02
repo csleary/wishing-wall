@@ -144,15 +144,17 @@ const handleIncomingTransactions = (socket, message) => {
 
 wss.on('connection', socket => {
   socket.on('message', event => {
-    const message = JSON.parse(event);
-    switch (message.type) {
-      case 'address':
-        handleEndpoints(socket, message);
-        break;
-      case 'fetchIncomingTransactions':
-        handleIncomingTransactions(socket, message);
-        break;
-      default:
+    if (socket.readyState === 1) {
+      const message = JSON.parse(event);
+      switch (message.type) {
+        case 'address':
+          handleEndpoints(socket, message);
+          break;
+        case 'fetchIncomingTransactions':
+          handleIncomingTransactions(socket, message);
+          break;
+        default:
+      }
     }
   });
   socket.on('close', () => {});
