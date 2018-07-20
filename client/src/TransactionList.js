@@ -1,4 +1,5 @@
 import React, { Fragment } from 'react';
+import moment from 'moment';
 import { Grid, Icon, Header, Label, Popup } from 'semantic-ui-react';
 import {
   filterTransactions,
@@ -6,12 +7,6 @@ import {
   renderMessage,
   sortTransactions
 } from './utils';
-
-const renderDate = timestamp => {
-  const date = new Date(timestamp);
-  const offset = date.getTimezoneOffset() * 60 * 1000;
-  return new Date(date - offset).toUTCString();
-};
 
 const renderIcon = (sortByValue, index) => {
   if (index === 0 && sortByValue) {
@@ -117,14 +112,7 @@ const TransactionList = props => {
           hoverable
           inverted
           position="bottom right"
-          trigger={
-            <Header size="small">
-              {!tx.transactionInfo && tx.type === 247
-                ? calculateAmount(tx) / 1000000
-                : calculateAmount(tx)}{' '}
-              XEM
-            </Header>
-          }
+          trigger={<Header size="small">{calculateAmount(tx)} XEM</Header>}
         >
           <p>
             <Icon name="hashtag" />
@@ -132,7 +120,12 @@ const TransactionList = props => {
               ? shortHash(props.network, tx.transactionInfo.hash.data)
               : 'To be confirmed…'}
             <br />
-            <Icon name="time" /> {renderDate(tx.timeWindow.timeStamp)}
+            <Icon name="time" />{' '}
+            {moment(
+              tx.timeWindow.timeStamp,
+              'YYYY-MM-DDTHH:mm:ss',
+              true
+            ).format('dddd, MMMM Do YYYY, h:mma')}
             <br />
             {tx.type === 4100 ? (
               <Fragment>
