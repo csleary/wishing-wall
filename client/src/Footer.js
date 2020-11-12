@@ -28,7 +28,7 @@ const Footer = props => (
         <a
           href={`${window.location.protocol}${
             window.location.pathname
-          }?address=NAER66DXCNYEBNMTWAPKG7CU27CMUPTQQDSM2KL6&sortByValue=true&max=20`}
+          }?address=NC7KCRGLODPZM6F6E64W4AABKLLONP2XY7FNEMP3&sortByValue=true&max=20`}
         >
           my own Wishing Wall
         </a>{' '}
